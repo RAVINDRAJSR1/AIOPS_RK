@@ -315,7 +315,8 @@ async function startPython() {
   const base = document.querySelector('meta[name="pyodide-base"]').content;
   try {
     await loadScript(base + "pyodide.js");
-    const pyodide = await loadPyodide({ indexURL: base });
+    const stdLib = document.querySelector('meta[name="pyodide-stdlib"]')?.content;
+    const pyodide = await loadPyodide(stdLib ? { indexURL: base, stdLibURL: stdLib } : { indexURL: base });
     for (const [name, text] of Object.entries(DATA.files)) pyodide.FS.writeFile(name, text);
     pyodide.runPython("import sys, os; sys.path.insert(0, os.getcwd())");
     const run = pyodide.pyimport("web_runner").run;
