@@ -16,7 +16,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 sys.path.insert(0, ROOT)
 
+import build_web  # noqa: E402
 import playground  # noqa: E402
+import web_runner  # noqa: E402
 from lessons import LESSONS  # noqa: E402
 
 
@@ -117,6 +119,53 @@ class PlaygroundTests(unittest.TestCase):
         with contextlib.redirect_stdout(out):
             playground.run_source("if True:\nprint('x')")
         self.assertIn("spaces at the start", out.getvalue())
+
+
+class WebRunnerTests(unittest.TestCase):
+    def test_print(self):
+        result = web_runner.run('print("Hi", 2 + 3)')
+        self.assertEqual(result["output"], "Hi 5\n")
+        self.assertFalse(result["waiting"] or result["error"])
+
+    def test_input_replays_with_answers(self):
+        source = LESSONS[4]["steps"][1]["code"]  # asks for two numbers
+        first = web_runner.run(source, [])
+        self.assertTrue(first["waiting"])
+        self.assertEqual(first["output"], "Enter first number: ")
+        done = web_runner.run(source, ["4", "6"])
+        self.assertFalse(done["waiting"])
+        self.assertIn("Enter second number: 6\nSum is 10", done["output"])
+
+    def test_random_is_same_on_replay(self):
+        path = os.path.join(playground.PROJECTS_DIR, "guess_the_number.py")
+        with open(path, encoding="utf-8") as f:
+            source = f.read()
+        guesses = [str(n) for n in range(1, 51)]
+        found = web_runner.run(source, guesses, seed=7)["output"]
+        tries = int(found.split("You got it in ")[1].split()[0])
+        again = web_runner.run(source, guesses[:tries], seed=7)
+        self.assertFalse(again["waiting"])
+        self.assertIn(f"in {tries} tries", again["output"])
+
+    def test_error_has_hint(self):
+        result = web_runner.run("print(scor)")
+        self.assertIn("NameError", result["error"])
+        self.assertIn("does not know that name", result["hint"])
+        self.assertIn("IndentationError", web_runner.run("if True:\nprint(1)")["error"])
+
+    def test_endless_loop_is_stopped(self):
+        result = web_runner.run("n = 1\nwhile n > 0:\n    n = n + 1")
+        self.assertIn("TimeoutError", result["error"])
+        self.assertIn("loop that never stops", result["hint"])
+
+    def test_student_except_cannot_swallow_input(self):
+        result = web_runner.run('try:\n    x = input("?")\nexcept Exception:\n    print("caught")')
+        self.assertTrue(result["waiting"])
+
+    def test_web_page_is_up_to_date(self):
+        with open(build_web.PAGE, encoding="utf-8") as f:
+            page = f.read()
+        self.assertEqual(page, build_web.build(page), "Run: python build_web.py")
 
 
 if __name__ == "__main__":

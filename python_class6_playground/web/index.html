@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Python Playground Class 6</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%232846b8%22/%3E%3Ctext x=%2216%22 y=%2223%22 font-size=%2218%22 text-anchor=%22middle%22 fill=%22%23f0a51a%22 font-family=%22sans-serif%22 font-weight=%22bold%22%3EPy%3C/text%3E%3C/svg%3E">
+<!-- Where Python (Pyodide) is loaded from. Needs an internet connection. -->
+<meta name="pyodide-base" content="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: exercise-book page. Lesson list on the left (a chip strip on phones),
+   the lesson on graph paper on the right: read -> code -> output, top to bottom. */
+:root {
+  --paper: #f5f8fd;
+  --grid: #dfe7f5;
+  --card: #ffffff;
+  --ink: #1b2340;
+  --muted: #5a6585;
+  --line: #cfd8ea;
+  --blue: #2846b8;
+  --blue-soft: #e4eafc;
+  --marigold: #f0a51a;
+  --marigold-soft: #fff1d3;
+  --good: #1d7a4a;
+  --good-soft: #def4e7;
+  --bad: #b3261e;
+  --bad-soft: #fde4e1;
+  --console: #141a33;
+  --console-ink: #e6ebff;
+  --console-dim: #8f9bc7;
+  --font-display: "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1326; --grid: #18203a; --card: #161d36; --ink: #e8ecfb; --muted: #9aa5c9;
+    --line: #2a3459; --blue: #8ea6ff; --blue-soft: #222d57; --marigold: #ffc04d; --marigold-soft: #3a2f14;
+    --good: #6fd69b; --good-soft: #15352a; --bad: #ff8a80; --bad-soft: #3d1c1c;
+    --console: #0a0e1d; --console-ink: #e6ebff; --console-dim: #7f8bb8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1326; --grid: #18203a; --card: #161d36; --ink: #e8ecfb; --muted: #9aa5c9;
+  --line: #2a3459; --blue: #8ea6ff; --blue-soft: #222d57; --marigold: #ffc04d; --marigold-soft: #3a2f14;
+  --good: #6fd69b; --good-soft: #15352a; --bad: #ff8a80; --bad-soft: #3d1c1c;
+  --console: #0a0e1d; --console-ink: #e6ebff; --console-dim: #7f8bb8;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 17px/1.55 var(--font-body);
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; }
+
+.app { display: grid; grid-template-rows: auto 1fr; min-height: 100%; }
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--card); border-bottom: 2px solid var(--line);
+}
+.brand { font: 800 1.45rem/1 var(--font-display); color: var(--blue); margin: 0; }
+.brand span { color: var(--marigold); }
+.tag {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  background: var(--marigold-soft); color: var(--ink); padding: 3px 9px; border-radius: 99px;
+}
+.status { margin-left: auto; font-size: .85rem; color: var(--muted); display: flex; align-items: center; gap: 7px; }
+.status::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--marigold); }
+.status[data-state="ready"]::before { background: var(--good); }
+.status[data-state="failed"]::before { background: var(--bad); }
+
+/* ---------- layout ---------- */
+.body { display: grid; grid-template-columns: 270px minmax(0, 1fr); min-height: 0; }
+nav {
+  border-right: 2px solid var(--line); background: var(--card);
+  padding: 14px 10px; display: flex; flex-direction: column; gap: 3px; overflow-y: auto;
+}
+.nav-label {
+  font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--muted); padding: 10px 10px 4px;
+}
+.nav-item {
+  display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 8px;
+  text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 10px; cursor: pointer;
+}
+.nav-item:hover { background: var(--blue-soft); }
+.nav-item[aria-current="true"] { background: var(--blue); color: var(--card); }
+.nav-num {
+  font: 800 .95rem/1 var(--font-display); width: 28px; height: 28px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--blue-soft); color: var(--blue);
+}
+.nav-item[aria-current="true"] .nav-num { background: var(--card); }
+.nav-item.done .nav-num { background: var(--good-soft); color: var(--good); }
+.nav-title { font-size: .93rem; line-height: 1.25; }
+.nav-stars { font-size: .8rem; color: var(--marigold); letter-spacing: 1px; }
+
+main {
+  min-width: 0;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  padding-block: 28px 60px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.page { max-width: 820px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.eyebrow { font-size: .8rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h2 { font: 800 2rem/1.15 var(--font-display); margin: 2px 0 0; text-wrap: balance; }
+h3 { font: 800 1.3rem/1.2 var(--font-display); margin: 0; }
+.goal {
+  display: inline-flex; gap: 8px; align-items: baseline; background: var(--marigold-soft);
+  border-radius: 10px; padding: 8px 14px; margin-top: 10px;
+}
+.goal b { font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; }
+
+.steps { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dot { width: 30px; height: 8px; border-radius: 99px; background: var(--line); border: 0; padding: 0; cursor: pointer; }
+.dot.seen { background: var(--blue); opacity: .45; }
+.dot.now { background: var(--blue); opacity: 1; }
+.steps .count { font-size: .85rem; color: var(--muted); margin-left: 6px; }
+
+.card { background: var(--card); border: 2px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+.explain p { margin: 0 0 .6em; max-width: 65ch; }
+.explain p:last-child { margin-bottom: 0; }
+.explain pre {
+  font: .92rem/1.5 var(--font-code); background: var(--blue-soft); border-radius: 10px;
+  padding: 10px 14px; margin: .2em 0 .8em; overflow-x: auto; white-space: pre;
+}
+
+/* ---------- runner ---------- */
+.runner { display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; border: 2px solid var(--line); background: var(--card); }
+.bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 8px 10px 8px 16px;
+  border-bottom: 2px solid var(--line);
+}
+.bar .file { font: 600 .85rem var(--font-code); color: var(--muted); margin-right: auto; }
+.btn {
+  border: 2px solid var(--line); background: var(--card); border-radius: 10px;
+  padding: 6px 14px; font-weight: 700; cursor: pointer; font-size: .92rem;
+}
+.btn:hover { border-color: var(--blue); }
+.btn.primary { background: var(--blue); border-color: var(--blue); color: var(--card); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.big { padding: 10px 20px; font-size: 1rem; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.editor {
+  display: block; width: 100%; border: 0; resize: vertical; padding: 14px 16px; margin: 0;
+  font: .95rem/1.6 var(--font-code); background: var(--card); color: var(--ink);
+  tab-size: 4; white-space: pre; overflow-x: auto; min-height: 5.5em;
+}
+.editor:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--marigold); }
+.console { background: var(--console); color: var(--console-ink); padding: 12px 16px 14px; }
+.console-head { font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--console-dim); margin-bottom: 4px; }
+.out { font: .93rem/1.55 var(--font-code); margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; min-height: 1.5em; }
+.out .empty { color: var(--console-dim); font-style: italic; }
+.ask { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.ask input {
+  flex: 1 1 180px; min-width: 0; font: .95rem var(--font-code); padding: 7px 10px; border-radius: 8px;
+  border: 2px solid var(--marigold); background: var(--console); color: var(--console-ink);
+}
+.ask-label { width: 100%; font-size: .82rem; color: var(--marigold); }
+.err { font: .9rem/1.5 var(--font-code); color: #ff9b91; white-space: pre-wrap; margin-top: 6px; }
+.helper {
+  margin-top: 10px; background: var(--marigold-soft); color: var(--ink); border-radius: 10px;
+  padding: 10px 14px; font-size: .95rem;
+}
+.helper b { display: block; font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.tip { font-size: .85rem; color: var(--muted); }
+kbd { font: .8rem var(--font-code); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; background: var(--card); }
+
+.nav-row { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+
+/* ---------- quiz ---------- */
+.q { display: flex; flex-direction: column; gap: 10px; }
+.q-text { font-weight: 700; }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px; }
+.opt {
+  text-align: left; border: 2px solid var(--line); background: var(--card); border-radius: 12px;
+  padding: 9px 12px; cursor: pointer; display: flex; gap: 10px; align-items: baseline;
+}
+.opt:hover:not(:disabled) { border-color: var(--blue); }
+.opt b { font-family: var(--font-display); color: var(--blue); }
+.opt:disabled { cursor: default; }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.why { font-size: .95rem; border-radius: 10px; padding: 8px 12px; }
+.why.right { background: var(--good-soft); }
+.why.wrong { background: var(--bad-soft); }
+.score { font: 800 1.5rem var(--font-display); }
+.stars { color: var(--marigold); font-size: 1.6rem; letter-spacing: 3px; }
+
+.solution pre { font: .92rem/1.55 var(--font-code); background: var(--blue-soft); border-radius: 10px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+
+.projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.project { text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+.project:hover, .project[aria-current="true"] { border-color: var(--blue); }
+.project small { color: var(--muted); }
+
+/* ---------- phones ---------- */
+@media (max-width: 760px) {
+  .body { grid-template-columns: minmax(0, 1fr); }
+  nav {
+    flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 2px solid var(--line);
+    padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+  }
+  .nav-label { display: none; }
+  .nav-item { grid-template-columns: 28px auto; flex: 0 0 auto; }
+  .nav-item .nav-title { white-space: nowrap; }
+  .nav-stars { display: none; }
+  h2 { font-size: 1.6rem; }
+  .card { padding: 16px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .page { animation: rise .25s ease-out; }
+  @keyframes rise { from { transform: translateY(6px); } to { transform: none; } }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 class="brand">Python <span>Playground</span></h1>
+    <span class="tag">Class 6</span>
+    <span class="status" id="status" data-state="loading">Loading Python…</span>
+  </header>
+  <div class="body">
+    <nav id="nav" aria-label="Lessons"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+
+<!-- PLAYGROUND DATA START (made by build_web.py, do not edit) -->
+<script id="playground-data" type="application/json">{"lessons": [{"title": "Hello, Python!", "goal": "Make the computer show messages on the screen using print().", "steps": [{"explain": "A computer is very fast but it cannot think on its own.\nWe give it INSTRUCTIONS. A list of instructions is called a PROGRAM.\nPython is a language we use to write those instructions.\n\nThe first instruction we learn is print(). It shows a message.\nThe message goes inside the brackets, inside quotes \" \".", "code": "print(\"Hello, World!\")"}, {"explain": "Python runs the lines one by one, from TOP to BOTTOM,\njust like you read a book.", "code": "print(\"Good morning!\")\nprint(\"My name is Python.\")\nprint(\"I love to help students.\")"}, {"explain": "print() can also do maths! Numbers do NOT need quotes.\nLook at the difference: with quotes Python shows the text as it is,\nwithout quotes Python calculates the answer.", "code": "print(\"2 + 3\")\nprint(2 + 3)"}, {"explain": "Lines starting with # are COMMENTS. Python ignores them.\nWe write comments to leave notes for humans.", "code": "# This line is a note. Python skips it.\nprint(\"Comments are invisible to Python!\")"}], "quiz": [{"q": "Which instruction shows a message on the screen?", "options": ["show()", "print()", "write()", "say()"], "answer": 1, "why": "print() is Python's way of showing things on the screen."}, {"q": "What will print(4 + 4) show?", "options": ["4 + 4", "44", "8", "Error"], "answer": 2, "why": "No quotes, so Python does the maths: 4 + 4 = 8."}, {"q": "What will print(\"4 + 4\") show?", "options": ["4 + 4", "8", "44", "Error"], "answer": 0, "why": "With quotes it is just text, so Python shows it exactly."}], "challenge": {"task": "Write a program that prints your name on one line and your school on the next line.", "hint": "Use print() two times. Put your words inside quotes.", "solution": "print(\"Riya Sharma\")\nprint(\"Green Valley School\")"}}, {"title": "Variables - Boxes with Labels", "goal": "Store information in variables and use it later.", "steps": [{"explain": "Imagine a box with a LABEL on it. You can keep something inside the box\nand later find it using the label. In Python this box is called a VARIABLE.\n\n   name = \"Aarav\"\n\nmeans: make a box labelled  name  and put \"Aarav\" inside it.\nThe = sign means 'put into', NOT 'is equal to' like in maths.", "code": "name = \"Aarav\"\nage = 11\nprint(name)\nprint(age)"}, {"explain": "You can change what is inside the box. The old value is thrown away\nand the new value is kept.", "code": "favourite_fruit = \"Mango\"\nprint(favourite_fruit)\nfavourite_fruit = \"Banana\"\nprint(favourite_fruit)"}, {"explain": "print() can show many things together. Separate them with commas.\nPython puts a space between each one automatically.", "code": "name = \"Meera\"\nmarks = 95\nprint(name, \"scored\", marks, \"marks\")"}, {"explain": "Rules for naming boxes (variables):\n  - Use letters, numbers and _ (underscore)\n  - Do NOT start with a number      (2cats is wrong, cats2 is OK)\n  - No spaces                       (my age is wrong, my_age is OK)\n  - Capital letters matter          (Age and age are DIFFERENT boxes)\nChoose names that tell you what is inside!", "code": "number_of_students = 40\nclass_name = \"6-B\"\nprint(\"Class\", class_name, \"has\", number_of_students, \"students\")"}], "quiz": [{"q": "In  score = 10  what does the = sign do?", "options": ["Checks if score is 10", "Puts 10 into the box called score", "Prints 10", "Adds 10 to score"], "answer": 1, "why": "= means 'store this value in this variable'."}, {"q": "Which is a CORRECT variable name?", "options": ["my name", "2nd_place", "total_marks", "class-6"], "answer": 2, "why": "total_marks uses only letters and _, and does not start with a number."}, {"q": "x = 5, then x = 9. What does print(x) show?", "options": ["5", "9", "14", "5 9"], "answer": 1, "why": "The box keeps only the newest value, which is 9."}], "challenge": {"task": "Make variables for your pet's name and its age, then print: 'Tommy is 3 years old'.", "hint": "pet = \"Tommy\" and pet_age = 3, then print(pet, \"is\", pet_age, \"years old\")", "solution": "pet = \"Tommy\"\npet_age = 3\nprint(pet, \"is\", pet_age, \"years old\")"}}, {"title": "Numbers and Maths", "goal": "Use Python as a super calculator.", "steps": [{"explain": "Python knows maths! These are the maths signs (OPERATORS):\n   +   add\n   -   subtract\n   *   multiply   (a star, not x)\n   /   divide", "code": "print(10 + 5)\nprint(10 - 5)\nprint(10 * 5)\nprint(10 / 5)"}, {"explain": "Two more useful ones you learnt in division:\n   //  QUOTIENT   (how many whole times it goes in)\n   %   REMAINDER  (what is left over)\n   **  POWER      (2 ** 3 means 2 x 2 x 2)\n\nExample: 17 sweets shared among 5 friends.", "code": "print(\"Each friend gets:\", 17 // 5)\nprint(\"Sweets left over:\", 17 % 5)\nprint(\"2 to the power 3 is:\", 2 ** 3)"}, {"explain": "Python follows BODMAS, just like your maths class.\nBrackets are solved first, then multiply/divide, then add/subtract.", "code": "print(2 + 3 * 4)\nprint((2 + 3) * 4)"}, {"explain": "Numbers in variables can be used for maths too.\nLet's find the area and perimeter of a rectangle.", "code": "length = 8\nbreadth = 5\narea = length * breadth\nperimeter = 2 * (length + breadth)\nprint(\"Area =\", area)\nprint(\"Perimeter =\", perimeter)"}, {"explain": "Two kinds of numbers:\n   int   = whole numbers   like 7, 100, -3\n   float = decimal numbers like 3.5, 99.9\nNormal division / always gives a float.", "code": "price = 45.50\nquantity = 2\nprint(\"Total cost:\", price * quantity)\nprint(9 / 3)"}], "quiz": [{"q": "What does 20 % 6 give?", "options": ["3", "2", "14", "120"], "answer": 1, "why": "20 divided by 6 is 3 with remainder 2. % gives the remainder."}, {"q": "What is 3 + 2 * 5 in Python?", "options": ["25", "13", "30", "10"], "answer": 1, "why": "Multiply first (BODMAS): 2*5 = 10, then 3+10 = 13."}, {"q": "Which sign is used to MULTIPLY in Python?", "options": ["x", "X", "*", "."], "answer": 2, "why": "Python uses the star * for multiplication."}], "challenge": {"task": "A box has 7 rows of 12 chocolates. Store rows and per_row in variables and print the total.", "hint": "total = rows * per_row", "solution": "rows = 7\nper_row = 12\ntotal = rows * per_row\nprint(\"Total chocolates:\", total)"}}, {"title": "Strings - Playing with Text", "goal": "Join, repeat and change text.", "steps": [{"explain": "Text in Python is called a STRING (like letters on a string of beads).\nA string is always inside quotes. You can use \" \" or ' '.", "code": "city = \"Delhi\"\nriver = 'Ganga'\nprint(city)\nprint(river)"}, {"explain": "+ with strings JOINS them (stick them together).\n* with strings REPEATS them.", "code": "first = \"Ice\"\nsecond = \"cream\"\nprint(first + second)\nprint(\"Ha\" * 3)\nprint(\"-\" * 20)"}, {"explain": "Strings have built-in tricks called METHODS. We use a dot to call them.\n   .upper()  -> CAPITAL LETTERS\n   .lower()  -> small letters\n   len()     -> counts the characters (letters, spaces, everything)", "code": "word = \"Python\"\nprint(word.upper())\nprint(word.lower())\nprint(len(word))"}, {"explain": "Each letter has a position number called an INDEX.\nIMPORTANT: counting starts at 0, not 1!\n\n    P  y  t  h  o  n\n    0  1  2  3  4  5", "code": "word = \"Python\"\nprint(word[0])\nprint(word[3])\nprint(word[-1])   # -1 means the LAST letter"}, {"explain": "An f-string is the easiest way to mix text and variables.\nPut f before the quotes and put variables inside { }.", "code": "name = \"Kabir\"\nage = 12\nprint(f\"Hi, I am {name} and I am {age} years old.\")"}], "quiz": [{"q": "What does \"Hi\" + \"Hi\" give?", "options": ["Hi Hi", "HiHi", "2Hi", "Error"], "answer": 1, "why": "+ sticks strings together with no space in between."}, {"q": "What is len(\"cat\")?", "options": ["2", "3", "4", "cat"], "answer": 1, "why": "c, a, t = 3 characters."}, {"q": "word = \"India\". What is word[0]?", "options": ["n", "I", "a", "d"], "answer": 1, "why": "Index starts at 0, so word[0] is the first letter, I."}], "challenge": {"task": "Store your name in a variable. Print it in CAPITALS and print how many letters it has.", "hint": "Use .upper() and len().", "solution": "name = \"Ananya\"\nprint(name.upper())\nprint(len(name))"}}, {"title": "Input - Talking to the Computer", "goal": "Ask the user questions and use their answers.", "steps": [{"explain": "So far our programs only TALK. Now they will LISTEN too!\ninput() shows a question, waits for you to type, and gives back your answer.\nWe usually store the answer in a variable.\n\nWhen you run this, type your name and press Enter.", "code": "name = input(\"What is your name? \")\nprint(\"Nice to meet you,\", name)"}, {"explain": "input() ALWAYS gives back a STRING (text), even if you type a number.\n\"5\" + \"5\" joins text and gives \"55\" - not what we want for maths!\nUse int() to change text into a whole number.\n\nType two numbers when asked.", "code": "a = int(input(\"Enter first number: \"))\nb = int(input(\"Enter second number: \"))\nprint(\"Sum is\", a + b)"}, {"explain": "Converting types:\n   int(\"12\")    -> 12     (text to whole number)\n   float(\"2.5\") -> 2.5    (text to decimal)\n   str(12)      -> \"12\"   (number to text)", "code": "print(\"5\" + \"5\")\nprint(int(\"5\") + int(\"5\"))\nprint(\"I have \" + str(3) + \" pencils\")"}], "quiz": [{"q": "What type of value does input() give back?", "options": ["Always a number", "Always a string (text)", "A list", "Nothing"], "answer": 1, "why": "input() always gives text. Use int() or float() for numbers."}, {"q": "What does int(\"7\") + 3 give?", "options": ["73", "10", "Error", "7 3"], "answer": 1, "why": "int(\"7\") is the number 7, and 7 + 3 = 10."}], "challenge": {"task": "Ask the user for their birth year and print how old they will be in 2030.", "hint": "year = int(input(...)) then age = 2030 - year", "solution": "year = int(input(\"Which year were you born? \"))\nprint(\"In 2030 you will be\", 2030 - year)"}}, {"title": "Decisions with if / elif / else", "goal": "Make the program choose what to do.", "steps": [{"explain": "Every day you make decisions:\n   IF it is raining, take an umbrella.\nPython can do this too, using  if.\n\nTo compare things we use these signs:\n   ==  equal to        (TWO = signs! One = means 'store')\n   !=  not equal to\n   >   greater than     <   less than\n   >=  greater or equal <=  less or equal\nA comparison gives True or False.", "code": "print(5 > 3)\nprint(5 < 3)\nprint(10 == 10)\nprint(\"cat\" != \"dog\")"}, {"explain": "The if line ends with a colon  :\nThe lines that belong to it are pushed right (INDENTED) by 4 spaces.\nThose lines run ONLY if the condition is True.", "code": "temperature = 38\nif temperature > 35:\n    print(\"It is very hot! Drink water.\")\nprint(\"Have a nice day!\")"}, {"explain": "else = what to do when the condition is False.\nLet's check if a number is even or odd (remember % gives remainder).", "code": "number = 7\nif number % 2 == 0:\n    print(number, \"is EVEN\")\nelse:\n    print(number, \"is ODD\")"}, {"explain": "elif means 'else if'. It lets us check many choices one after another.\nPython stops at the FIRST one that is True.", "code": "marks = 82\nif marks >= 90:\n    print(\"Grade A+\")\nelif marks >= 75:\n    print(\"Grade A\")\nelif marks >= 50:\n    print(\"Grade B\")\nelse:\n    print(\"Keep practising!\")"}, {"explain": "Join conditions with  and  /  or :\n   and -> BOTH must be True\n   or  -> at least ONE must be True", "code": "age = 12\nhas_ticket = True\nif age >= 10 and has_ticket:\n    print(\"You can enter the science show!\")\nday = \"Sunday\"\nif day == \"Saturday\" or day == \"Sunday\":\n    print(\"Holiday!\")"}], "quiz": [{"q": "Which sign CHECKS if two things are equal?", "options": ["=", "==", "===", "=>"], "answer": 1, "why": "== compares. A single = stores a value in a variable."}, {"q": "What must come at the end of an if line?", "options": [". (dot)", "; (semicolon)", ": (colon)", "Nothing"], "answer": 2, "why": "if, elif and else lines always end with a colon :"}, {"q": "x = 4.  if x > 10: print('Big')  else: print('Small').  What is shown?", "options": ["Big", "Small", "Big Small", "Nothing"], "answer": 1, "why": "4 > 10 is False, so the else part runs."}], "challenge": {"task": "Ask for a number. Print 'Positive', 'Negative' or 'Zero'.", "hint": "Use if n > 0, elif n < 0, else.", "solution": "n = int(input(\"Enter a number: \"))\nif n > 0:\n    print(\"Positive\")\nelif n < 0:\n    print(\"Negative\")\nelse:\n    print(\"Zero\")"}}, {"title": "for Loops - Repeat Without Getting Tired", "goal": "Repeat instructions many times with a for loop.", "steps": [{"explain": "Your teacher says: 'Write I will not talk in class 5 times.'\nBoring! A LOOP repeats instructions for us.\n\nrange(5) gives the numbers 0, 1, 2, 3, 4  (5 numbers, starting at 0).\nThe indented lines run once for each number.", "code": "for i in range(5):\n    print(\"I will practise Python!\")"}, {"explain": "The variable (here  i ) holds the current number each time round.\nrange(1, 6) starts at 1 and stops BEFORE 6.", "code": "for i in range(1, 6):\n    print(\"Round number\", i)"}, {"explain": "A third number in range is the STEP (how much to jump).\nrange(2, 21, 2) gives 2, 4, 6 ... 20  (even numbers).", "code": "for n in range(2, 21, 2):\n    print(n, end=\" \")\nprint()\n# Counting down for a rocket!\nfor n in range(5, 0, -1):\n    print(n)\nprint(\"Blast off!\")"}, {"explain": "Let's make a multiplication table - in just 2 lines!", "code": "number = 7\nfor i in range(1, 11):\n    print(number, \"x\", i, \"=\", number * i)"}, {"explain": "Loops can ADD UP numbers. We start a 'total' box at 0\nand add to it every time round. Sum of 1 to 10:", "code": "total = 0\nfor i in range(1, 11):\n    total = total + i\nprint(\"Sum of 1 to 10 is\", total)"}, {"explain": "A for loop can also go through each letter of a string.", "code": "for letter in \"SCHOOL\":\n    print(letter)"}], "quiz": [{"q": "Which numbers does range(4) give?", "options": ["1, 2, 3, 4", "0, 1, 2, 3", "0, 1, 2, 3, 4", "4"], "answer": 1, "why": "range starts at 0 and stops BEFORE the number given."}, {"q": "How many times will this print? for i in range(3, 8): print(i)", "options": ["8", "5", "3", "6"], "answer": 1, "why": "3, 4, 5, 6, 7 = 5 numbers (8 is not included)."}, {"q": "What does range(10, 0, -2) start with?", "options": ["0", "10", "8", "-2"], "answer": 1, "why": "It starts at 10 and jumps down by 2: 10, 8, 6, 4, 2."}], "challenge": {"task": "Print the squares of numbers from 1 to 10 (1, 4, 9, ... 100).", "hint": "for i in range(1, 11): print(i * i)", "solution": "for i in range(1, 11):\n    print(i, \"squared is\", i * i)"}}, {"title": "while Loops - Repeat Until...", "goal": "Repeat something as long as a condition is True.", "steps": [{"explain": "A for loop is good when we KNOW how many times to repeat.\nA while loop keeps going AS LONG AS a condition is True.\nLike: 'keep eating WHILE you are hungry'.", "code": "count = 1\nwhile count <= 5:\n    print(\"Count is\", count)\n    count = count + 1\nprint(\"Done!\")"}, {"explain": "WARNING: Always change something inside the loop so it can stop!\nIf count never grows, the loop runs FOREVER (an infinite loop).\nIf that ever happens, press Ctrl + C to stop it.\n\nHere: how many times can we double 1 before it is bigger than 100?", "code": "number = 1\nsteps = 0\nwhile number <= 100:\n    number = number * 2\n    steps = steps + 1\nprint(\"It took\", steps, \"doublings to reach\", number)"}, {"explain": "while is great for asking again until the answer is right.\nTry a wrong password first, then type: python", "code": "password = \"\"\nwhile password != \"python\":\n    password = input(\"Enter the secret password: \")\nprint(\"Access granted!\")"}, {"explain": "break jumps OUT of a loop immediately.\nHere we search for the first number divisible by 7 after 50.", "code": "n = 51\nwhile True:\n    if n % 7 == 0:\n        break\n    n = n + 1\nprint(\"First multiple of 7 after 50 is\", n)"}], "quiz": [{"q": "When does a while loop stop?", "options": ["After 10 times", "When its condition becomes False", "Never", "When it prints something"], "answer": 1, "why": "while keeps repeating only as long as the condition is True."}, {"q": "Which key combination stops a program stuck in an infinite loop?", "options": ["Ctrl + S", "Ctrl + C", "Alt + F4 only", "Enter"], "answer": 1, "why": "Ctrl + C interrupts a running Python program."}], "challenge": {"task": "Use a while loop to print 10, 9, 8 ... 1 and then 'Happy New Year!'.", "hint": "Start n = 10, loop while n >= 1, and do n = n - 1 inside.", "solution": "n = 10\nwhile n >= 1:\n    print(n)\n    n = n - 1\nprint(\"Happy New Year!\")"}}, {"title": "Lists - A Bag of Many Things", "goal": "Keep many values together in one list.", "steps": [{"explain": "A variable is one box. A LIST is like a school bag with many items.\nWe write a list with square brackets [ ] and commas.", "code": "fruits = [\"apple\", \"banana\", \"mango\"]\nmarks = [78, 92, 85, 64]\nprint(fruits)\nprint(marks)"}, {"explain": "Just like letters in a string, items in a list have an INDEX starting at 0.", "code": "planets = [\"Mercury\", \"Venus\", \"Earth\", \"Mars\"]\nprint(planets[0])\nprint(planets[2])\nprint(\"Number of planets in list:\", len(planets))"}, {"explain": "Lists can CHANGE:\n   .append(x)  -> add x at the end\n   .remove(x)  -> take x out\n   list[i] = x -> replace the item at position i", "code": "bag = [\"book\", \"pencil\"]\nbag.append(\"eraser\")\nprint(bag)\nbag.remove(\"pencil\")\nprint(bag)\nbag[0] = \"notebook\"\nprint(bag)"}, {"explain": "Loop over a list with for - Python gives you each item one by one.", "code": "friends = [\"Riya\", \"Arjun\", \"Sara\"]\nfor friend in friends:\n    print(\"Happy birthday,\", friend + \"!\")"}, {"explain": "Python has handy helpers for lists of numbers:\n   sum()  max()  min()  sorted()", "code": "marks = [78, 92, 85, 64, 88]\nprint(\"Total:\", sum(marks))\nprint(\"Highest:\", max(marks))\nprint(\"Lowest:\", min(marks))\nprint(\"Average:\", sum(marks) / len(marks))\nprint(\"Sorted:\", sorted(marks))"}, {"explain": "Use  in  to check if something is inside a list.", "code": "colours = [\"red\", \"green\", \"blue\"]\nif \"green\" in colours:\n    print(\"Yes, green is there!\")\nprint(\"pink\" in colours)"}], "quiz": [{"q": "nums = [5, 10, 15]. What is nums[1]?", "options": ["5", "10", "15", "1"], "answer": 1, "why": "Index 0 is 5, index 1 is 10."}, {"q": "Which method adds an item at the END of a list?", "options": [".add()", ".push()", ".append()", ".insert_end()"], "answer": 2, "why": ".append() adds to the end."}, {"q": "What does len([3, 6, 9, 12]) give?", "options": ["3", "4", "12", "30"], "answer": 1, "why": "There are 4 items in the list."}], "challenge": {"task": "Make a list of 5 of your favourite foods. Add one more, then print each on its own line.", "hint": "foods = [...], foods.append(...), then a for loop.", "solution": "foods = [\"dosa\", \"pizza\", \"paneer\", \"momos\", \"kheer\"]\nfoods.append(\"idli\")\nfor food in foods:\n    print(food)"}}, {"title": "Functions - Your Own Commands", "goal": "Create your own reusable instructions.", "steps": [{"explain": "A FUNCTION is a set of instructions with a name - like a recipe.\nWrite the recipe once, then use (CALL) it as many times as you like.\n\nWe create one with  def  (short for 'define').", "code": "def say_hello():\n    print(\"Hello!\")\n    print(\"Welcome to Python class.\")\n\nsay_hello()\nsay_hello()"}, {"explain": "Functions can take INPUTS called PARAMETERS, written inside the brackets.\nIt's like telling the recipe how many people to cook for.", "code": "def greet(name):\n    print(\"Good morning,\", name)\n\ngreet(\"Aditi\")\ngreet(\"Rohan\")"}, {"explain": "return sends an answer BACK from the function, so we can store or use it.", "code": "def square(n):\n    return n * n\n\nanswer = square(6)\nprint(answer)\nprint(square(3) + square(4))"}, {"explain": "Functions can take more than one input. Here is a useful one!", "code": "def rectangle_area(length, breadth):\n    return length * breadth\n\nprint(\"Room area:\", rectangle_area(5, 4))\nprint(\"Garden area:\", rectangle_area(12, 10))"}, {"explain": "Putting it all together: a function that uses if/else and returns a word.", "code": "def even_or_odd(n):\n    if n % 2 == 0:\n        return \"even\"\n    else:\n        return \"odd\"\n\nfor number in [3, 8, 11, 20]:\n    print(number, \"is\", even_or_odd(number))"}], "quiz": [{"q": "Which word is used to create a function?", "options": ["func", "def", "make", "function"], "answer": 1, "why": "def (define) starts a function."}, {"q": "def double(x): return x * 2.   What is double(7)?", "options": ["7", "9", "14", "72"], "answer": 2, "why": "7 * 2 = 14."}, {"q": "What does return do?", "options": ["Prints the answer", "Sends a value back to where the function was called", "Repeats the function", "Deletes the function"], "answer": 1, "why": "return gives a value back so the caller can use it."}], "challenge": {"task": "Write a function cube(n) that returns n * n * n. Print cube(3).", "hint": "def cube(n):  then  return n * n * n", "solution": "def cube(n):\n    return n * n * n\n\nprint(cube(3))"}}], "projects": [{"name": "Guess the Number game", "uses": "while loops, if/else, random", "code": "# GUESS THE NUMBER\n# The computer thinks of a secret number. You try to guess it!\n# Uses: random, while loop, if / elif / else, input\n\nimport random\n\nsecret = random.randint(1, 50)   # a random whole number from 1 to 50\ntries = 0\nguess = 0\n\nprint(\"I am thinking of a number between 1 and 50.\")\n\nwhile guess != secret:\n    guess = int(input(\"Your guess: \"))\n    tries = tries + 1\n    if guess < secret:\n        print(\"Too LOW! Try a bigger number.\")\n    elif guess > secret:\n        print(\"Too HIGH! Try a smaller number.\")\n\nprint(f\"YES! It was {secret}. You got it in {tries} tries!\")\n\n# TRY THIS: change 50 to 100 to make the game harder.\n# TRY THIS: stop the game after 7 tries and say \"Game over\".\n"}, {"name": "Times Table Quiz", "uses": "for loops, input, scores", "code": "# TIMES TABLE QUIZ\n# Answer 5 multiplication questions. Can you get them all right?\n# Uses: random, for loop, input, int(), if / else, a score variable\n\nimport random\n\nscore = 0\nquestions = 5\n\nfor number in range(1, questions + 1):\n    a = random.randint(2, 12)\n    b = random.randint(2, 12)\n    answer = int(input(f\"Question {number}: What is {a} x {b}? \"))\n    if answer == a * b:\n        print(\"Correct!\")\n        score = score + 1\n    else:\n        print(f\"Oops! {a} x {b} = {a * b}\")\n\nprint(f\"\\nYou scored {score} out of {questions}.\")\nif score == questions:\n    print(\"Maths champion!\")\n\n# TRY THIS: change questions = 5 to questions = 10.\n# TRY THIS: make it an addition quiz instead.\n"}, {"name": "Simple Calculator", "uses": "functions, if/elif", "code": "# SIMPLE CALCULATOR\n# Uses: functions, return, if / elif / else, float()\n\ndef calculate(a, sign, b):\n    if sign == \"+\":\n        return a + b\n    elif sign == \"-\":\n        return a - b\n    elif sign == \"*\":\n        return a * b\n    elif sign == \"/\":\n        if b == 0:\n            return \"Cannot divide by zero!\"\n        return a / b\n    else:\n        return \"I don't know that sign.\"\n\n\nprint(\"SIMPLE CALCULATOR  (signs: + - * /)\")\nfirst = float(input(\"First number: \"))\nsign = input(\"Sign: \")\nsecond = float(input(\"Second number: \"))\n\nprint(\"Answer:\", calculate(first, sign, second))\n\n# TRY THIS: add  %  for remainder and  **  for power.\n"}, {"name": "Silly Story Maker", "uses": "strings, input, f-strings", "code": "# SILLY STORY MAKER\n# You give some words, Python makes a funny story!\n# Uses: input, variables, f-strings, .upper()\n\nname = input(\"Give me a name: \")\nanimal = input(\"Give me an animal: \")\nfood = input(\"Give me a food: \")\nplace = input(\"Give me a place: \")\nnumber = input(\"Give me a number: \")\n\nprint(\"\\n------- YOUR STORY -------\")\nprint(f\"One day {name} went to {place} with a {animal}.\")\nprint(f\"The {animal} was very hungry and ate {number} plates of {food}!\")\nprint(f\"Everyone shouted, \\\"{name.upper()}, YOUR {animal.upper()} IS TOO GREEDY!\\\"\")\nprint(\"The end.\")\n\n# TRY THIS: ask for more words and make the story longer.\n"}, {"name": "Report Card", "uses": "lists, sum, max, min, functions", "code": "# REPORT CARD\n# Enter marks for 5 subjects and get a report card.\n# Uses: lists, for loop, append, sum, max, min, functions\n\nsubjects = [\"English\", \"Hindi\", \"Maths\", \"Science\", \"Social Science\"]\nmarks = []\n\n\ndef grade(percent):\n    if percent >= 90:\n        return \"A+\"\n    elif percent >= 75:\n        return \"A\"\n    elif percent >= 60:\n        return \"B\"\n    elif percent >= 40:\n        return \"C\"\n    else:\n        return \"Needs improvement\"\n\n\nfor subject in subjects:\n    mark = int(input(f\"Marks in {subject} (out of 100): \"))\n    marks.append(mark)\n\ntotal = sum(marks)\npercent = total / len(subjects)\n\nprint(\"\\n========= REPORT CARD =========\")\nfor i in range(len(subjects)):\n    print(f\"{subjects[i]:<15} {marks[i]}\")\nprint(\"-------------------------------\")\nprint(\"Total:     \", total, \"/\", len(subjects) * 100)\nprint(\"Percentage:\", round(percent, 1))\nprint(\"Best mark: \", max(marks))\nprint(\"Lowest:    \", min(marks))\nprint(\"Grade:     \", grade(percent))\n\n# TRY THIS: also print the name of the subject with the best mark.\n"}], "files": {"lessons.py": "\"\"\"\nAll the lessons for the Python Playground.\n\nEach lesson has:\n  - title      : name of the lesson\n  - goal       : what you will be able to do after the lesson\n  - steps      : small steps, each with an explanation and a code example\n  - quiz       : questions to check you understood\n  - challenge  : a small task to try on your own (with a hint and an answer)\n\nTeachers: you can add your own lessons by copying one block below.\n\"\"\"\n\nLESSONS = [\n    # ------------------------------------------------------------------ 1\n    {\n        \"title\": \"Hello, Python!\",\n        \"goal\": \"Make the computer show messages on the screen using print().\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"A computer is very fast but it cannot think on its own.\\n\"\n                    \"We give it INSTRUCTIONS. A list of instructions is called a PROGRAM.\\n\"\n                    \"Python is a language we use to write those instructions.\\n\\n\"\n                    \"The first instruction we learn is print(). It shows a message.\\n\"\n                    \"The message goes inside the brackets, inside quotes \\\" \\\".\"\n                ),\n                \"code\": 'print(\"Hello, World!\")',\n            },\n            {\n                \"explain\": (\n                    \"Python runs the lines one by one, from TOP to BOTTOM,\\n\"\n                    \"just like you read a book.\"\n                ),\n                \"code\": (\n                    'print(\"Good morning!\")\\n'\n                    'print(\"My name is Python.\")\\n'\n                    'print(\"I love to help students.\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"print() can also do maths! Numbers do NOT need quotes.\\n\"\n                    \"Look at the difference: with quotes Python shows the text as it is,\\n\"\n                    \"without quotes Python calculates the answer.\"\n                ),\n                \"code\": (\n                    'print(\"2 + 3\")\\n'\n                    \"print(2 + 3)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Lines starting with # are COMMENTS. Python ignores them.\\n\"\n                    \"We write comments to leave notes for humans.\"\n                ),\n                \"code\": (\n                    \"# This line is a note. Python skips it.\\n\"\n                    'print(\"Comments are invisible to Python!\")'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"Which instruction shows a message on the screen?\",\n                \"options\": [\"show()\", \"print()\", \"write()\", \"say()\"],\n                \"answer\": 1,\n                \"why\": \"print() is Python's way of showing things on the screen.\",\n            },\n            {\n                \"q\": 'What will print(4 + 4) show?',\n                \"options\": [\"4 + 4\", \"44\", \"8\", \"Error\"],\n                \"answer\": 2,\n                \"why\": \"No quotes, so Python does the maths: 4 + 4 = 8.\",\n            },\n            {\n                \"q\": 'What will print(\"4 + 4\") show?',\n                \"options\": [\"4 + 4\", \"8\", \"44\", \"Error\"],\n                \"answer\": 0,\n                \"why\": \"With quotes it is just text, so Python shows it exactly.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Write a program that prints your name on one line and your school on the next line.\",\n            \"hint\": \"Use print() two times. Put your words inside quotes.\",\n            \"solution\": 'print(\"Riya Sharma\")\\nprint(\"Green Valley School\")',\n        },\n    },\n    # ------------------------------------------------------------------ 2\n    {\n        \"title\": \"Variables - Boxes with Labels\",\n        \"goal\": \"Store information in variables and use it later.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"Imagine a box with a LABEL on it. You can keep something inside the box\\n\"\n                    \"and later find it using the label. In Python this box is called a VARIABLE.\\n\\n\"\n                    \"   name = \\\"Aarav\\\"\\n\\n\"\n                    \"means: make a box labelled  name  and put \\\"Aarav\\\" inside it.\\n\"\n                    \"The = sign means 'put into', NOT 'is equal to' like in maths.\"\n                ),\n                \"code\": (\n                    'name = \"Aarav\"\\n'\n                    \"age = 11\\n\"\n                    \"print(name)\\n\"\n                    \"print(age)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"You can change what is inside the box. The old value is thrown away\\n\"\n                    \"and the new value is kept.\"\n                ),\n                \"code\": (\n                    'favourite_fruit = \"Mango\"\\n'\n                    \"print(favourite_fruit)\\n\"\n                    'favourite_fruit = \"Banana\"\\n'\n                    \"print(favourite_fruit)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"print() can show many things together. Separate them with commas.\\n\"\n                    \"Python puts a space between each one automatically.\"\n                ),\n                \"code\": (\n                    'name = \"Meera\"\\n'\n                    \"marks = 95\\n\"\n                    'print(name, \"scored\", marks, \"marks\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Rules for naming boxes (variables):\\n\"\n                    \"  - Use letters, numbers and _ (underscore)\\n\"\n                    \"  - Do NOT start with a number      (2cats is wrong, cats2 is OK)\\n\"\n                    \"  - No spaces                       (my age is wrong, my_age is OK)\\n\"\n                    \"  - Capital letters matter          (Age and age are DIFFERENT boxes)\\n\"\n                    \"Choose names that tell you what is inside!\"\n                ),\n                \"code\": (\n                    \"number_of_students = 40\\n\"\n                    \"class_name = \\\"6-B\\\"\\n\"\n                    'print(\"Class\", class_name, \"has\", number_of_students, \"students\")'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"In  score = 10  what does the = sign do?\",\n                \"options\": [\n                    \"Checks if score is 10\",\n                    \"Puts 10 into the box called score\",\n                    \"Prints 10\",\n                    \"Adds 10 to score\",\n                ],\n                \"answer\": 1,\n                \"why\": \"= means 'store this value in this variable'.\",\n            },\n            {\n                \"q\": \"Which is a CORRECT variable name?\",\n                \"options\": [\"my name\", \"2nd_place\", \"total_marks\", \"class-6\"],\n                \"answer\": 2,\n                \"why\": \"total_marks uses only letters and _, and does not start with a number.\",\n            },\n            {\n                \"q\": \"x = 5, then x = 9. What does print(x) show?\",\n                \"options\": [\"5\", \"9\", \"14\", \"5 9\"],\n                \"answer\": 1,\n                \"why\": \"The box keeps only the newest value, which is 9.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Make variables for your pet's name and its age, then print: 'Tommy is 3 years old'.\",\n            \"hint\": \"pet = \\\"Tommy\\\" and pet_age = 3, then print(pet, \\\"is\\\", pet_age, \\\"years old\\\")\",\n            \"solution\": 'pet = \"Tommy\"\\npet_age = 3\\nprint(pet, \"is\", pet_age, \"years old\")',\n        },\n    },\n    # ------------------------------------------------------------------ 3\n    {\n        \"title\": \"Numbers and Maths\",\n        \"goal\": \"Use Python as a super calculator.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"Python knows maths! These are the maths signs (OPERATORS):\\n\"\n                    \"   +   add\\n\"\n                    \"   -   subtract\\n\"\n                    \"   *   multiply   (a star, not x)\\n\"\n                    \"   /   divide\"\n                ),\n                \"code\": (\n                    \"print(10 + 5)\\n\"\n                    \"print(10 - 5)\\n\"\n                    \"print(10 * 5)\\n\"\n                    \"print(10 / 5)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Two more useful ones you learnt in division:\\n\"\n                    \"   //  QUOTIENT   (how many whole times it goes in)\\n\"\n                    \"   %   REMAINDER  (what is left over)\\n\"\n                    \"   **  POWER      (2 ** 3 means 2 x 2 x 2)\\n\\n\"\n                    \"Example: 17 sweets shared among 5 friends.\"\n                ),\n                \"code\": (\n                    'print(\"Each friend gets:\", 17 // 5)\\n'\n                    'print(\"Sweets left over:\", 17 % 5)\\n'\n                    'print(\"2 to the power 3 is:\", 2 ** 3)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Python follows BODMAS, just like your maths class.\\n\"\n                    \"Brackets are solved first, then multiply/divide, then add/subtract.\"\n                ),\n                \"code\": (\n                    \"print(2 + 3 * 4)\\n\"\n                    \"print((2 + 3) * 4)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Numbers in variables can be used for maths too.\\n\"\n                    \"Let's find the area and perimeter of a rectangle.\"\n                ),\n                \"code\": (\n                    \"length = 8\\n\"\n                    \"breadth = 5\\n\"\n                    \"area = length * breadth\\n\"\n                    \"perimeter = 2 * (length + breadth)\\n\"\n                    'print(\"Area =\", area)\\n'\n                    'print(\"Perimeter =\", perimeter)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Two kinds of numbers:\\n\"\n                    \"   int   = whole numbers   like 7, 100, -3\\n\"\n                    \"   float = decimal numbers like 3.5, 99.9\\n\"\n                    \"Normal division / always gives a float.\"\n                ),\n                \"code\": (\n                    \"price = 45.50\\n\"\n                    \"quantity = 2\\n\"\n                    'print(\"Total cost:\", price * quantity)\\n'\n                    \"print(9 / 3)\"\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"What does 20 % 6 give?\",\n                \"options\": [\"3\", \"2\", \"14\", \"120\"],\n                \"answer\": 1,\n                \"why\": \"20 divided by 6 is 3 with remainder 2. % gives the remainder.\",\n            },\n            {\n                \"q\": \"What is 3 + 2 * 5 in Python?\",\n                \"options\": [\"25\", \"13\", \"30\", \"10\"],\n                \"answer\": 1,\n                \"why\": \"Multiply first (BODMAS): 2*5 = 10, then 3+10 = 13.\",\n            },\n            {\n                \"q\": \"Which sign is used to MULTIPLY in Python?\",\n                \"options\": [\"x\", \"X\", \"*\", \".\"],\n                \"answer\": 2,\n                \"why\": \"Python uses the star * for multiplication.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"A box has 7 rows of 12 chocolates. Store rows and per_row in variables and print the total.\",\n            \"hint\": \"total = rows * per_row\",\n            \"solution\": 'rows = 7\\nper_row = 12\\ntotal = rows * per_row\\nprint(\"Total chocolates:\", total)',\n        },\n    },\n    # ------------------------------------------------------------------ 4\n    {\n        \"title\": \"Strings - Playing with Text\",\n        \"goal\": \"Join, repeat and change text.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"Text in Python is called a STRING (like letters on a string of beads).\\n\"\n                    \"A string is always inside quotes. You can use \\\" \\\" or ' '.\"\n                ),\n                \"code\": (\n                    'city = \"Delhi\"\\n'\n                    \"river = 'Ganga'\\n\"\n                    \"print(city)\\n\"\n                    \"print(river)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"+ with strings JOINS them (stick them together).\\n\"\n                    \"* with strings REPEATS them.\"\n                ),\n                \"code\": (\n                    'first = \"Ice\"\\n'\n                    'second = \"cream\"\\n'\n                    \"print(first + second)\\n\"\n                    'print(\"Ha\" * 3)\\n'\n                    'print(\"-\" * 20)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Strings have built-in tricks called METHODS. We use a dot to call them.\\n\"\n                    \"   .upper()  -> CAPITAL LETTERS\\n\"\n                    \"   .lower()  -> small letters\\n\"\n                    \"   len()     -> counts the characters (letters, spaces, everything)\"\n                ),\n                \"code\": (\n                    'word = \"Python\"\\n'\n                    \"print(word.upper())\\n\"\n                    \"print(word.lower())\\n\"\n                    \"print(len(word))\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Each letter has a position number called an INDEX.\\n\"\n                    \"IMPORTANT: counting starts at 0, not 1!\\n\\n\"\n                    \"    P  y  t  h  o  n\\n\"\n                    \"    0  1  2  3  4  5\"\n                ),\n                \"code\": (\n                    'word = \"Python\"\\n'\n                    \"print(word[0])\\n\"\n                    \"print(word[3])\\n\"\n                    \"print(word[-1])   # -1 means the LAST letter\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"An f-string is the easiest way to mix text and variables.\\n\"\n                    \"Put f before the quotes and put variables inside { }.\"\n                ),\n                \"code\": (\n                    'name = \"Kabir\"\\n'\n                    \"age = 12\\n\"\n                    'print(f\"Hi, I am {name} and I am {age} years old.\")'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": 'What does \"Hi\" + \"Hi\" give?',\n                \"options\": [\"Hi Hi\", \"HiHi\", \"2Hi\", \"Error\"],\n                \"answer\": 1,\n                \"why\": \"+ sticks strings together with no space in between.\",\n            },\n            {\n                \"q\": 'What is len(\"cat\")?',\n                \"options\": [\"2\", \"3\", \"4\", \"cat\"],\n                \"answer\": 1,\n                \"why\": \"c, a, t = 3 characters.\",\n            },\n            {\n                \"q\": 'word = \"India\". What is word[0]?',\n                \"options\": [\"n\", \"I\", \"a\", \"d\"],\n                \"answer\": 1,\n                \"why\": \"Index starts at 0, so word[0] is the first letter, I.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Store your name in a variable. Print it in CAPITALS and print how many letters it has.\",\n            \"hint\": \"Use .upper() and len().\",\n            \"solution\": 'name = \"Ananya\"\\nprint(name.upper())\\nprint(len(name))',\n        },\n    },\n    # ------------------------------------------------------------------ 5\n    {\n        \"title\": \"Input - Talking to the Computer\",\n        \"goal\": \"Ask the user questions and use their answers.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"So far our programs only TALK. Now they will LISTEN too!\\n\"\n                    \"input() shows a question, waits for you to type, and gives back your answer.\\n\"\n                    \"We usually store the answer in a variable.\\n\\n\"\n                    \"When you run this, type your name and press Enter.\"\n                ),\n                \"code\": (\n                    'name = input(\"What is your name? \")\\n'\n                    'print(\"Nice to meet you,\", name)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"input() ALWAYS gives back a STRING (text), even if you type a number.\\n\"\n                    \"\\\"5\\\" + \\\"5\\\" joins text and gives \\\"55\\\" - not what we want for maths!\\n\"\n                    \"Use int() to change text into a whole number.\\n\\n\"\n                    \"Type two numbers when asked.\"\n                ),\n                \"code\": (\n                    'a = int(input(\"Enter first number: \"))\\n'\n                    'b = int(input(\"Enter second number: \"))\\n'\n                    'print(\"Sum is\", a + b)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Converting types:\\n\"\n                    \"   int(\\\"12\\\")    -> 12     (text to whole number)\\n\"\n                    \"   float(\\\"2.5\\\") -> 2.5    (text to decimal)\\n\"\n                    \"   str(12)      -> \\\"12\\\"   (number to text)\"\n                ),\n                \"code\": (\n                    'print(\"5\" + \"5\")\\n'\n                    'print(int(\"5\") + int(\"5\"))\\n'\n                    'print(\"I have \" + str(3) + \" pencils\")'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"What type of value does input() give back?\",\n                \"options\": [\"Always a number\", \"Always a string (text)\", \"A list\", \"Nothing\"],\n                \"answer\": 1,\n                \"why\": \"input() always gives text. Use int() or float() for numbers.\",\n            },\n            {\n                \"q\": 'What does int(\"7\") + 3 give?',\n                \"options\": [\"73\", \"10\", \"Error\", \"7 3\"],\n                \"answer\": 1,\n                \"why\": 'int(\"7\") is the number 7, and 7 + 3 = 10.',\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Ask the user for their birth year and print how old they will be in 2030.\",\n            \"hint\": \"year = int(input(...)) then age = 2030 - year\",\n            \"solution\": 'year = int(input(\"Which year were you born? \"))\\nprint(\"In 2030 you will be\", 2030 - year)',\n        },\n    },\n    # ------------------------------------------------------------------ 6\n    {\n        \"title\": \"Decisions with if / elif / else\",\n        \"goal\": \"Make the program choose what to do.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"Every day you make decisions:\\n\"\n                    \"   IF it is raining, take an umbrella.\\n\"\n                    \"Python can do this too, using  if.\\n\\n\"\n                    \"To compare things we use these signs:\\n\"\n                    \"   ==  equal to        (TWO = signs! One = means 'store')\\n\"\n                    \"   !=  not equal to\\n\"\n                    \"   >   greater than     <   less than\\n\"\n                    \"   >=  greater or equal <=  less or equal\\n\"\n                    \"A comparison gives True or False.\"\n                ),\n                \"code\": (\n                    \"print(5 > 3)\\n\"\n                    \"print(5 < 3)\\n\"\n                    \"print(10 == 10)\\n\"\n                    'print(\"cat\" != \"dog\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"The if line ends with a colon  :\\n\"\n                    \"The lines that belong to it are pushed right (INDENTED) by 4 spaces.\\n\"\n                    \"Those lines run ONLY if the condition is True.\"\n                ),\n                \"code\": (\n                    \"temperature = 38\\n\"\n                    \"if temperature > 35:\\n\"\n                    '    print(\"It is very hot! Drink water.\")\\n'\n                    'print(\"Have a nice day!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"else = what to do when the condition is False.\\n\"\n                    \"Let's check if a number is even or odd (remember % gives remainder).\"\n                ),\n                \"code\": (\n                    \"number = 7\\n\"\n                    \"if number % 2 == 0:\\n\"\n                    '    print(number, \"is EVEN\")\\n'\n                    \"else:\\n\"\n                    '    print(number, \"is ODD\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"elif means 'else if'. It lets us check many choices one after another.\\n\"\n                    \"Python stops at the FIRST one that is True.\"\n                ),\n                \"code\": (\n                    \"marks = 82\\n\"\n                    \"if marks >= 90:\\n\"\n                    '    print(\"Grade A+\")\\n'\n                    \"elif marks >= 75:\\n\"\n                    '    print(\"Grade A\")\\n'\n                    \"elif marks >= 50:\\n\"\n                    '    print(\"Grade B\")\\n'\n                    \"else:\\n\"\n                    '    print(\"Keep practising!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Join conditions with  and  /  or :\\n\"\n                    \"   and -> BOTH must be True\\n\"\n                    \"   or  -> at least ONE must be True\"\n                ),\n                \"code\": (\n                    \"age = 12\\n\"\n                    \"has_ticket = True\\n\"\n                    \"if age >= 10 and has_ticket:\\n\"\n                    '    print(\"You can enter the science show!\")\\n'\n                    'day = \"Sunday\"\\n'\n                    'if day == \"Saturday\" or day == \"Sunday\":\\n'\n                    '    print(\"Holiday!\")'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"Which sign CHECKS if two things are equal?\",\n                \"options\": [\"=\", \"==\", \"===\", \"=>\"],\n                \"answer\": 1,\n                \"why\": \"== compares. A single = stores a value in a variable.\",\n            },\n            {\n                \"q\": \"What must come at the end of an if line?\",\n                \"options\": [\". (dot)\", \"; (semicolon)\", \": (colon)\", \"Nothing\"],\n                \"answer\": 2,\n                \"why\": \"if, elif and else lines always end with a colon :\",\n            },\n            {\n                \"q\": \"x = 4.  if x > 10: print('Big')  else: print('Small').  What is shown?\",\n                \"options\": [\"Big\", \"Small\", \"Big Small\", \"Nothing\"],\n                \"answer\": 1,\n                \"why\": \"4 > 10 is False, so the else part runs.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Ask for a number. Print 'Positive', 'Negative' or 'Zero'.\",\n            \"hint\": \"Use if n > 0, elif n < 0, else.\",\n            \"solution\": (\n                'n = int(input(\"Enter a number: \"))\\n'\n                \"if n > 0:\\n\"\n                '    print(\"Positive\")\\n'\n                \"elif n < 0:\\n\"\n                '    print(\"Negative\")\\n'\n                \"else:\\n\"\n                '    print(\"Zero\")'\n            ),\n        },\n    },\n    # ------------------------------------------------------------------ 7\n    {\n        \"title\": \"for Loops - Repeat Without Getting Tired\",\n        \"goal\": \"Repeat instructions many times with a for loop.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"Your teacher says: 'Write I will not talk in class 5 times.'\\n\"\n                    \"Boring! A LOOP repeats instructions for us.\\n\\n\"\n                    \"range(5) gives the numbers 0, 1, 2, 3, 4  (5 numbers, starting at 0).\\n\"\n                    \"The indented lines run once for each number.\"\n                ),\n                \"code\": (\n                    \"for i in range(5):\\n\"\n                    '    print(\"I will practise Python!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"The variable (here  i ) holds the current number each time round.\\n\"\n                    \"range(1, 6) starts at 1 and stops BEFORE 6.\"\n                ),\n                \"code\": (\n                    \"for i in range(1, 6):\\n\"\n                    '    print(\"Round number\", i)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"A third number in range is the STEP (how much to jump).\\n\"\n                    \"range(2, 21, 2) gives 2, 4, 6 ... 20  (even numbers).\"\n                ),\n                \"code\": (\n                    \"for n in range(2, 21, 2):\\n\"\n                    '    print(n, end=\" \")\\n'\n                    \"print()\\n\"\n                    \"# Counting down for a rocket!\\n\"\n                    \"for n in range(5, 0, -1):\\n\"\n                    \"    print(n)\\n\"\n                    'print(\"Blast off!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Let's make a multiplication table - in just 2 lines!\"\n                ),\n                \"code\": (\n                    \"number = 7\\n\"\n                    \"for i in range(1, 11):\\n\"\n                    '    print(number, \"x\", i, \"=\", number * i)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Loops can ADD UP numbers. We start a 'total' box at 0\\n\"\n                    \"and add to it every time round. Sum of 1 to 10:\"\n                ),\n                \"code\": (\n                    \"total = 0\\n\"\n                    \"for i in range(1, 11):\\n\"\n                    \"    total = total + i\\n\"\n                    'print(\"Sum of 1 to 10 is\", total)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"A for loop can also go through each letter of a string.\"\n                ),\n                \"code\": (\n                    'for letter in \"SCHOOL\":\\n'\n                    \"    print(letter)\"\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"Which numbers does range(4) give?\",\n                \"options\": [\"1, 2, 3, 4\", \"0, 1, 2, 3\", \"0, 1, 2, 3, 4\", \"4\"],\n                \"answer\": 1,\n                \"why\": \"range starts at 0 and stops BEFORE the number given.\",\n            },\n            {\n                \"q\": \"How many times will this print? for i in range(3, 8): print(i)\",\n                \"options\": [\"8\", \"5\", \"3\", \"6\"],\n                \"answer\": 1,\n                \"why\": \"3, 4, 5, 6, 7 = 5 numbers (8 is not included).\",\n            },\n            {\n                \"q\": \"What does range(10, 0, -2) start with?\",\n                \"options\": [\"0\", \"10\", \"8\", \"-2\"],\n                \"answer\": 1,\n                \"why\": \"It starts at 10 and jumps down by 2: 10, 8, 6, 4, 2.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Print the squares of numbers from 1 to 10 (1, 4, 9, ... 100).\",\n            \"hint\": \"for i in range(1, 11): print(i * i)\",\n            \"solution\": \"for i in range(1, 11):\\n    print(i, \\\"squared is\\\", i * i)\",\n        },\n    },\n    # ------------------------------------------------------------------ 8\n    {\n        \"title\": \"while Loops - Repeat Until...\",\n        \"goal\": \"Repeat something as long as a condition is True.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"A for loop is good when we KNOW how many times to repeat.\\n\"\n                    \"A while loop keeps going AS LONG AS a condition is True.\\n\"\n                    \"Like: 'keep eating WHILE you are hungry'.\"\n                ),\n                \"code\": (\n                    \"count = 1\\n\"\n                    \"while count <= 5:\\n\"\n                    '    print(\"Count is\", count)\\n'\n                    \"    count = count + 1\\n\"\n                    'print(\"Done!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"WARNING: Always change something inside the loop so it can stop!\\n\"\n                    \"If count never grows, the loop runs FOREVER (an infinite loop).\\n\"\n                    \"If that ever happens, press Ctrl + C to stop it.\\n\\n\"\n                    \"Here: how many times can we double 1 before it is bigger than 100?\"\n                ),\n                \"code\": (\n                    \"number = 1\\n\"\n                    \"steps = 0\\n\"\n                    \"while number <= 100:\\n\"\n                    \"    number = number * 2\\n\"\n                    \"    steps = steps + 1\\n\"\n                    'print(\"It took\", steps, \"doublings to reach\", number)'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"while is great for asking again until the answer is right.\\n\"\n                    \"Try a wrong password first, then type: python\"\n                ),\n                \"code\": (\n                    'password = \"\"\\n'\n                    'while password != \"python\":\\n'\n                    '    password = input(\"Enter the secret password: \")\\n'\n                    'print(\"Access granted!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"break jumps OUT of a loop immediately.\\n\"\n                    \"Here we search for the first number divisible by 7 after 50.\"\n                ),\n                \"code\": (\n                    \"n = 51\\n\"\n                    \"while True:\\n\"\n                    \"    if n % 7 == 0:\\n\"\n                    \"        break\\n\"\n                    \"    n = n + 1\\n\"\n                    'print(\"First multiple of 7 after 50 is\", n)'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"When does a while loop stop?\",\n                \"options\": [\n                    \"After 10 times\",\n                    \"When its condition becomes False\",\n                    \"Never\",\n                    \"When it prints something\",\n                ],\n                \"answer\": 1,\n                \"why\": \"while keeps repeating only as long as the condition is True.\",\n            },\n            {\n                \"q\": \"Which key combination stops a program stuck in an infinite loop?\",\n                \"options\": [\"Ctrl + S\", \"Ctrl + C\", \"Alt + F4 only\", \"Enter\"],\n                \"answer\": 1,\n                \"why\": \"Ctrl + C interrupts a running Python program.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Use a while loop to print 10, 9, 8 ... 1 and then 'Happy New Year!'.\",\n            \"hint\": \"Start n = 10, loop while n >= 1, and do n = n - 1 inside.\",\n            \"solution\": 'n = 10\\nwhile n >= 1:\\n    print(n)\\n    n = n - 1\\nprint(\"Happy New Year!\")',\n        },\n    },\n    # ------------------------------------------------------------------ 9\n    {\n        \"title\": \"Lists - A Bag of Many Things\",\n        \"goal\": \"Keep many values together in one list.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"A variable is one box. A LIST is like a school bag with many items.\\n\"\n                    \"We write a list with square brackets [ ] and commas.\"\n                ),\n                \"code\": (\n                    'fruits = [\"apple\", \"banana\", \"mango\"]\\n'\n                    \"marks = [78, 92, 85, 64]\\n\"\n                    \"print(fruits)\\n\"\n                    \"print(marks)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Just like letters in a string, items in a list have an INDEX starting at 0.\"\n                ),\n                \"code\": (\n                    'planets = [\"Mercury\", \"Venus\", \"Earth\", \"Mars\"]\\n'\n                    \"print(planets[0])\\n\"\n                    \"print(planets[2])\\n\"\n                    'print(\"Number of planets in list:\", len(planets))'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Lists can CHANGE:\\n\"\n                    \"   .append(x)  -> add x at the end\\n\"\n                    \"   .remove(x)  -> take x out\\n\"\n                    \"   list[i] = x -> replace the item at position i\"\n                ),\n                \"code\": (\n                    'bag = [\"book\", \"pencil\"]\\n'\n                    'bag.append(\"eraser\")\\n'\n                    \"print(bag)\\n\"\n                    'bag.remove(\"pencil\")\\n'\n                    \"print(bag)\\n\"\n                    'bag[0] = \"notebook\"\\n'\n                    \"print(bag)\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Loop over a list with for - Python gives you each item one by one.\"\n                ),\n                \"code\": (\n                    'friends = [\"Riya\", \"Arjun\", \"Sara\"]\\n'\n                    \"for friend in friends:\\n\"\n                    '    print(\"Happy birthday,\", friend + \"!\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Python has handy helpers for lists of numbers:\\n\"\n                    \"   sum()  max()  min()  sorted()\"\n                ),\n                \"code\": (\n                    \"marks = [78, 92, 85, 64, 88]\\n\"\n                    'print(\"Total:\", sum(marks))\\n'\n                    'print(\"Highest:\", max(marks))\\n'\n                    'print(\"Lowest:\", min(marks))\\n'\n                    'print(\"Average:\", sum(marks) / len(marks))\\n'\n                    'print(\"Sorted:\", sorted(marks))'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Use  in  to check if something is inside a list.\"\n                ),\n                \"code\": (\n                    'colours = [\"red\", \"green\", \"blue\"]\\n'\n                    'if \"green\" in colours:\\n'\n                    '    print(\"Yes, green is there!\")\\n'\n                    'print(\"pink\" in colours)'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": 'nums = [5, 10, 15]. What is nums[1]?',\n                \"options\": [\"5\", \"10\", \"15\", \"1\"],\n                \"answer\": 1,\n                \"why\": \"Index 0 is 5, index 1 is 10.\",\n            },\n            {\n                \"q\": \"Which method adds an item at the END of a list?\",\n                \"options\": [\".add()\", \".push()\", \".append()\", \".insert_end()\"],\n                \"answer\": 2,\n                \"why\": \".append() adds to the end.\",\n            },\n            {\n                \"q\": \"What does len([3, 6, 9, 12]) give?\",\n                \"options\": [\"3\", \"4\", \"12\", \"30\"],\n                \"answer\": 1,\n                \"why\": \"There are 4 items in the list.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Make a list of 5 of your favourite foods. Add one more, then print each on its own line.\",\n            \"hint\": \"foods = [...], foods.append(...), then a for loop.\",\n            \"solution\": (\n                'foods = [\"dosa\", \"pizza\", \"paneer\", \"momos\", \"kheer\"]\\n'\n                'foods.append(\"idli\")\\n'\n                \"for food in foods:\\n\"\n                \"    print(food)\"\n            ),\n        },\n    },\n    # ------------------------------------------------------------------ 10\n    {\n        \"title\": \"Functions - Your Own Commands\",\n        \"goal\": \"Create your own reusable instructions.\",\n        \"steps\": [\n            {\n                \"explain\": (\n                    \"A FUNCTION is a set of instructions with a name - like a recipe.\\n\"\n                    \"Write the recipe once, then use (CALL) it as many times as you like.\\n\\n\"\n                    \"We create one with  def  (short for 'define').\"\n                ),\n                \"code\": (\n                    \"def say_hello():\\n\"\n                    '    print(\"Hello!\")\\n'\n                    '    print(\"Welcome to Python class.\")\\n'\n                    \"\\n\"\n                    \"say_hello()\\n\"\n                    \"say_hello()\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Functions can take INPUTS called PARAMETERS, written inside the brackets.\\n\"\n                    \"It's like telling the recipe how many people to cook for.\"\n                ),\n                \"code\": (\n                    \"def greet(name):\\n\"\n                    '    print(\"Good morning,\", name)\\n'\n                    \"\\n\"\n                    'greet(\"Aditi\")\\n'\n                    'greet(\"Rohan\")'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"return sends an answer BACK from the function, so we can store or use it.\"\n                ),\n                \"code\": (\n                    \"def square(n):\\n\"\n                    \"    return n * n\\n\"\n                    \"\\n\"\n                    \"answer = square(6)\\n\"\n                    \"print(answer)\\n\"\n                    \"print(square(3) + square(4))\"\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Functions can take more than one input. Here is a useful one!\"\n                ),\n                \"code\": (\n                    \"def rectangle_area(length, breadth):\\n\"\n                    \"    return length * breadth\\n\"\n                    \"\\n\"\n                    'print(\"Room area:\", rectangle_area(5, 4))\\n'\n                    'print(\"Garden area:\", rectangle_area(12, 10))'\n                ),\n            },\n            {\n                \"explain\": (\n                    \"Putting it all together: a function that uses if/else and returns a word.\"\n                ),\n                \"code\": (\n                    \"def even_or_odd(n):\\n\"\n                    \"    if n % 2 == 0:\\n\"\n                    '        return \"even\"\\n'\n                    \"    else:\\n\"\n                    '        return \"odd\"\\n'\n                    \"\\n\"\n                    \"for number in [3, 8, 11, 20]:\\n\"\n                    '    print(number, \"is\", even_or_odd(number))'\n                ),\n            },\n        ],\n        \"quiz\": [\n            {\n                \"q\": \"Which word is used to create a function?\",\n                \"options\": [\"func\", \"def\", \"make\", \"function\"],\n                \"answer\": 1,\n                \"why\": \"def (define) starts a function.\",\n            },\n            {\n                \"q\": \"def double(x): return x * 2.   What is double(7)?\",\n                \"options\": [\"7\", \"9\", \"14\", \"72\"],\n                \"answer\": 2,\n                \"why\": \"7 * 2 = 14.\",\n            },\n            {\n                \"q\": \"What does return do?\",\n                \"options\": [\n                    \"Prints the answer\",\n                    \"Sends a value back to where the function was called\",\n                    \"Repeats the function\",\n                    \"Deletes the function\",\n                ],\n                \"answer\": 1,\n                \"why\": \"return gives a value back so the caller can use it.\",\n            },\n        ],\n        \"challenge\": {\n            \"task\": \"Write a function cube(n) that returns n * n * n. Print cube(3).\",\n            \"hint\": \"def cube(n):  then  return n * n * n\",\n            \"solution\": \"def cube(n):\\n    return n * n * n\\n\\nprint(cube(3))\",\n        },\n    },\n]\n", "playground.py": "\"\"\"\nPYTHON PLAYGROUND FOR CLASS 6\n=============================\n\nStart it by typing this in a terminal:\n\n    python playground.py\n\nThen just follow the instructions on the screen!\n\"\"\"\n\nimport code\nimport json\nimport os\nimport runpy\nimport sys\nimport traceback\n\nfrom lessons import LESSONS\n\nHERE = os.path.dirname(os.path.abspath(__file__))\nPROGRESS_FILE = os.path.join(HERE, \"progress.json\")\nPROJECTS_DIR = os.path.join(HERE, \"projects\")\n\nPROJECTS = [\n    (\"guess_the_number.py\", \"Guess the Number game\", \"while loops, if/else, random\"),\n    (\"times_table_quiz.py\", \"Times Table Quiz\", \"for loops, input, scores\"),\n    (\"simple_calculator.py\", \"Simple Calculator\", \"functions, if/elif\"),\n    (\"story_maker.py\", \"Silly Story Maker\", \"strings, input, f-strings\"),\n    (\"report_card.py\", \"Report Card\", \"lists, sum, max, min, functions\"),\n    (\"turtle_art.py\", \"Turtle Drawing (opens a window)\", \"loops + drawing\"),\n]\n\n# Simple explanations for the most common mistakes beginners make.\nERROR_HINTS = {\n    \"SyntaxError\": \"Python could not understand the grammar. Check for missing quotes \\\" \\\", \"\n                   \"brackets ( ), or a colon : at the end of if / for / while / def lines.\",\n    \"IndentationError\": \"The spaces at the start of a line are wrong. Lines inside if / for / \"\n                        \"while / def must be pushed right by 4 spaces.\",\n    \"NameError\": \"Python does not know that name. Did you spell it correctly? Did you create \"\n                 \"the variable before using it? Did you forget quotes around text?\",\n    \"TypeError\": \"You mixed types that don't fit together, like text + number. \"\n                 \"Use str() to turn a number into text, or int() to turn text into a number.\",\n    \"ValueError\": \"The value was not what Python expected. For example int(\\\"hello\\\") fails \"\n                  \"because 'hello' is not a number.\",\n    \"ZeroDivisionError\": \"You tried to divide by zero. Nobody can do that, not even Python!\",\n    \"IndexError\": \"That position does not exist. Remember positions start at 0, so a list of \"\n                  \"3 items has positions 0, 1 and 2.\",\n    \"AttributeError\": \"That thing does not have that method. Check the spelling after the dot.\",\n    \"TimeoutError\": \"Your program ran for too long. Is there a loop that never stops? \"\n                    \"Check that something inside the loop changes so it can end.\",\n}\n\n\n# ----------------------------------------------------------------- helpers\ndef line(char=\"=\", width=60):\n    print(char * width)\n\n\ndef title(text):\n    print()\n    line()\n    print(\"  \" + text)\n    line()\n\n\ndef pause(message=\"Press Enter to continue...\"):\n    try:\n        return input(\"\\n\" + message).strip().lower()\n    except EOFError:\n        print()\n        return \"\"\n\n\ndef ask(prompt):\n    try:\n        return input(prompt).strip()\n    except EOFError:\n        print()\n        return \"q\"\n\n\ndef show_code(source):\n    print(\"\\n  +--- CODE \" + \"-\" * 44)\n    for number, text in enumerate(source.splitlines(), start=1):\n        print(f\"  | {number:>2}  {text}\")\n    print(\"  +\" + \"-\" * 53)\n\n\ndef error_hint(error_type):\n    # Check the most specific error first (IndentationError is a kind of SyntaxError).\n    for kind in getattr(error_type, \"__mro__\", ()):\n        if kind.__name__ in ERROR_HINTS:\n            return ERROR_HINTS[kind.__name__]\n    return \"Read the last line of the red message, it tells you what went wrong.\"\n\n\ndef explain_error(error_type):\n    print(f\"\\n  HELPER: {error_hint(error_type)}\")\n\n\ndef run_source(source):\n    \"\"\"Run some Python code and show its output (or a friendly error).\"\"\"\n    print(\"\\n  >>> OUTPUT:\")\n    try:\n        exec(compile(source, \"<your code>\", \"exec\"), {\"__name__\": \"__main__\"})\n    except KeyboardInterrupt:\n        print(\"\\n  (Stopped with Ctrl + C)\")\n    except Exception:\n        error_type = sys.exc_info()[0]\n        traceback.print_exc(limit=0, file=sys.stdout)\n        explain_error(error_type)\n    print(\"  <<< END OF OUTPUT\")\n\n\n# --------------------------------------------------------------- progress\ndef load_progress():\n    try:\n        with open(PROGRESS_FILE, encoding=\"utf-8\") as f:\n            return json.load(f)\n    except (OSError, ValueError):\n        return {\"name\": \"\", \"stars\": {}}\n\n\ndef save_progress(progress):\n    try:\n        with open(PROGRESS_FILE, \"w\", encoding=\"utf-8\") as f:\n            json.dump(progress, f, indent=2)\n    except OSError:\n        pass  # Not being able to save should never stop the lesson.\n\n\n# ---------------------------------------------------------------- sandbox\nclass FriendlyConsole(code.InteractiveConsole):\n    \"\"\"A normal Python console that also explains errors in simple words.\"\"\"\n\n    def showsyntaxerror(self, filename=None, **kwargs):\n        super().showsyntaxerror(filename, **kwargs)\n        explain_error(sys.exc_info()[0])\n\n    def showtraceback(self):\n        super().showtraceback()\n        explain_error(sys.exc_info()[0])\n\n\ndef sandbox():\n    title(\"SANDBOX - try anything you like!\")\n    print(\"  Type Python code and press Enter to run it.\")\n    print(\"  For if / for / while / def: type the lines, then press Enter on an\")\n    print(\"  empty line to finish.  Type  done  to go back to the menu.\\n\")\n    console = FriendlyConsole()\n    more = False\n    while True:\n        try:\n            text = input(\"... \" if more else \">>> \")\n        except EOFError:\n            print()\n            break\n        except KeyboardInterrupt:\n            print(\"\\n  (Cleared)\")\n            console.resetbuffer()\n            more = False\n            continue\n        if not more and text.strip().lower() in (\"done\", \"exit\", \"quit\", \"exit()\", \"quit()\"):\n            break\n        try:\n            more = console.push(text)\n        except SystemExit:\n            break\n\n\ndef write_program():\n    \"\"\"Let the student type a whole program, then run it.\"\"\"\n    print(\"\\n  Type your program line by line. Use 4 spaces for indentation.\")\n    print(\"  When you are finished, type  run  on its own line.\\n\")\n    lines = []\n    while True:\n        try:\n            text = input(f\"  {len(lines) + 1:>2} | \")\n        except EOFError:\n            print()\n            break\n        if text.strip().lower() == \"run\":\n            break\n        lines.append(text)\n    if lines:\n        run_source(\"\\n\".join(lines))\n\n\n# ---------------------------------------------------------------- lessons\ndef run_quiz(lesson):\n    title(\"QUIZ TIME!\")\n    score = 0\n    for number, item in enumerate(lesson[\"quiz\"], start=1):\n        print(f\"\\n  Q{number}. {item['q']}\")\n        for i, option in enumerate(item[\"options\"]):\n            print(f\"      {chr(65 + i)}) {option}\")\n        letters = [chr(65 + i) for i in range(len(item[\"options\"]))]\n        while True:\n            reply = ask(\"  Your answer (A/B/C/D): \").upper()\n            if reply in letters or reply == \"Q\":\n                break\n            print(\"  Please type one of:\", \", \".join(letters))\n        if reply == \"Q\":\n            break\n        if letters.index(reply) == item[\"answer\"]:\n            score += 1\n            print(\"  CORRECT! Well done!\")\n        else:\n            right = letters[item[\"answer\"]]\n            print(f\"  Not quite. The answer is {right}) {item['options'][item['answer']]}\")\n        print(f\"  Why: {item['why']}\")\n    total = len(lesson[\"quiz\"])\n    print(f\"\\n  You scored {score} out of {total}.\")\n    if score == total:\n        print(\"  PERFECT SCORE! You are a Python star!\")\n    elif score >= total / 2:\n        print(\"  Good job! Look again at the ones you missed.\")\n    else:\n        print(\"  That's okay - every programmer learns by making mistakes. Try the lesson again!\")\n    return score\n\n\ndef run_challenge(lesson):\n    challenge = lesson[\"challenge\"]\n    title(\"YOUR CHALLENGE\")\n    print(\"  \" + challenge[\"task\"])\n    while True:\n        print(\"\\n  W = write and run your program   H = hint\")\n        print(\"  S = show the answer               Enter = finish lesson\")\n        choice = ask(\"  Choose: \").lower()\n        if choice == \"w\":\n            write_program()\n        elif choice == \"h\":\n            print(\"\\n  HINT: \" + challenge[\"hint\"])\n        elif choice == \"s\":\n            print(\"\\n  One possible answer (yours may be different and still correct!):\")\n            show_code(challenge[\"solution\"])\n            if ask(\"  Run it? (y/n): \").lower() == \"y\":\n                run_source(challenge[\"solution\"])\n        else:\n            return\n\n\ndef run_lesson(number, progress):\n    lesson = LESSONS[number - 1]\n    title(f\"LESSON {number}: {lesson['title']}\")\n    print(f\"  GOAL: {lesson['goal']}\")\n    steps = lesson[\"steps\"]\n    for step_number, step in enumerate(steps, start=1):\n        print()\n        line(\"-\")\n        print(f\"  STEP {step_number} of {len(steps)}\")\n        line(\"-\")\n        print(step[\"explain\"])\n        show_code(step[\"code\"])\n        if pause(\"Press Enter to RUN this code (or Q to go back to menu): \") == \"q\":\n            return\n        run_source(step[\"code\"])\n        print(\"\\n  Enter = next step   T = try it yourself in the sandbox   Q = menu\")\n        choice = pause(\"  Choose: \")\n        if choice == \"t\":\n            sandbox()\n        elif choice == \"q\":\n            return\n\n    score = run_quiz(lesson)\n    run_challenge(lesson)\n\n    key = str(number)\n    progress[\"stars\"][key] = max(score, progress[\"stars\"].get(key, 0))\n    save_progress(progress)\n    print(f\"\\n  Lesson {number} complete! Progress saved.\")\n    pause()\n\n\n# --------------------------------------------------------------- projects\ndef projects_menu():\n    while True:\n        title(\"MINI PROJECTS - real programs made from what you learnt\")\n        for i, (_, name, uses) in enumerate(PROJECTS, start=1):\n            print(f\"  {i}. {name:<34} uses: {uses}\")\n        print(\"\\n  Type a number to PLAY it, V + number to VIEW its code (e.g. V1),\")\n        print(\"  or press Enter to go back.\")\n        choice = ask(\"  Choose: \").lower()\n        if not choice or choice == \"q\":\n            return\n        view = choice.startswith(\"v\")\n        digits = choice[1:] if view else choice\n        if not digits.isdigit() or not 1 <= int(digits) <= len(PROJECTS):\n            print(\"  Please choose a number from the list.\")\n            continue\n        path = os.path.join(PROJECTS_DIR, PROJECTS[int(digits) - 1][0])\n        if view:\n            with open(path, encoding=\"utf-8\") as f:\n                show_code(f.read())\n            print(f\"  (This file is at: {path} - open it in an editor and change it!)\")\n            pause()\n            continue\n        print()\n        try:\n            runpy.run_path(path, run_name=\"__main__\")\n        except KeyboardInterrupt:\n            print(\"\\n  (Stopped)\")\n        except Exception:\n            traceback.print_exc(limit=0, file=sys.stdout)\n            explain_error(sys.exc_info()[0])\n        pause()\n\n\n# ------------------------------------------------------------------ menu\ndef main_menu(progress):\n    while True:\n        title(f\"PYTHON PLAYGROUND - Welcome, {progress['name']}!\")\n        print(\"  Do the lessons in order. Each one builds on the one before.\\n\")\n        for i, lesson in enumerate(LESSONS, start=1):\n            stars = progress[\"stars\"].get(str(i))\n            if stars is None:\n                badge = \"[ ]\"\n            else:\n                badge = \"[*] \" + \"*\" * stars\n            print(f\"  {i:>2}. {badge:<9} {lesson['title']}\")\n        print()\n        print(\"   S. Sandbox  - type any Python and see what happens\")\n        print(\"   P. Projects - play and read real mini programs\")\n        print(\"   Q. Quit\")\n        choice = ask(\"\\n  Type a lesson number or a letter: \").lower()\n        if choice == \"q\":\n            print(f\"\\n  Bye {progress['name']}! Keep coding every day!\\n\")\n            return\n        if choice == \"s\":\n            sandbox()\n        elif choice == \"p\":\n            projects_menu()\n        elif choice.isdigit() and 1 <= int(choice) <= len(LESSONS):\n            run_lesson(int(choice), progress)\n        else:\n            print(\"  Hmm, I don't know that one. Try again!\")\n\n\ndef main():\n    progress = load_progress()\n    title(\"HELLO, FUTURE PROGRAMMER!\")\n    print(\"  This playground teaches Python step by step.\")\n    print(\"  You will READ a little, SEE the code, RUN it, and then TRY it yourself.\")\n    if not progress[\"name\"]:\n        progress[\"name\"] = ask(\"\\n  What is your name? \") or \"Coder\"\n        if progress[\"name\"].lower() == \"q\":\n            progress[\"name\"] = \"Coder\"\n        save_progress(progress)\n    try:\n        main_menu(progress)\n    except KeyboardInterrupt:\n        print(\"\\n\\n  Bye! Your progress is saved.\\n\")\n\n\nif __name__ == \"__main__\":\n    main()\n", "web_runner.py": "\"\"\"\nRuns student code for the web version of the playground (web/index.html).\n\nThe browser runs Python with Pyodide, which cannot pause a program to wait\nfor typing. So input() works by REPLAYING: when the program asks a question\nwe have no answer for yet, we stop and show the question. When the student\nanswers, the program runs again from the start with that answer filled in.\nrandom is seeded the same way each time, so a replay behaves exactly the same.\n\"\"\"\n\nimport contextlib\nimport io\nimport random\nimport sys\nimport traceback\n\nfrom playground import error_hint\n\nFILENAME = \"<your code>\"\nMAX_LINES = 1_000_000  # stops loops that never end, so the page cannot freeze\n\n\nclass NeedInput(BaseException):\n    \"\"\"Raised when the program asks for more answers than we have.\n\n    It is a BaseException so a student's own `except Exception:` cannot catch it.\n    \"\"\"\n\n\ndef run(source, answers=(), seed=0):\n    \"\"\"Run source and return what it printed.\n\n    Returns a dict with:\n      output  - everything printed (questions and answers included)\n      error   - the error message, or \"\" if it worked\n      hint    - a simple explanation of the error\n      waiting - True if the program stopped to wait for an answer\n    \"\"\"\n    answers = list(answers)\n    out = io.StringIO()\n    result = {\"output\": \"\", \"error\": \"\", \"hint\": \"\", \"waiting\": False}\n\n    def fake_input(prompt=\"\"):\n        out.write(str(prompt))\n        if not answers:\n            raise NeedInput()\n        answer = str(answers.pop(0))\n        out.write(answer + \"\\n\")\n        return answer\n\n    lines_run = 0\n\n    def count_lines(frame, event, arg):\n        nonlocal lines_run\n        if event == \"line\":\n            lines_run += 1\n            if lines_run > MAX_LINES:\n                raise TimeoutError(\"Your program ran for too long.\")\n        return count_lines\n\n    def trace_student_code(frame, event, arg):\n        return count_lines if frame.f_code.co_filename == FILENAME else None\n\n    random.seed(seed)\n    namespace = {\"__name__\": \"__main__\", \"input\": fake_input}\n    with contextlib.redirect_stdout(out):\n        try:\n            program = compile(source, FILENAME, \"exec\")\n            sys.settrace(trace_student_code)\n            try:\n                exec(program, namespace)\n            finally:\n                sys.settrace(None)\n        except NeedInput:\n            result[\"waiting\"] = True\n        except Exception as error:\n            result[\"error\"] = \"\".join(traceback.format_exception_only(type(error), error)).rstrip()\n            result[\"hint\"] = error_hint(type(error))\n    result[\"output\"] = out.getvalue()\n    return result\n"}}</script>
+<!-- PLAYGROUND DATA END -->
+
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById("playground-data").textContent);
+const LESSONS = DATA.lessons;
+const LETTERS = "ABCD";
+
+// ---------- small helpers ----------
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [key, value] of Object.entries(attrs || {})) {
+    if (key === "class") el.className = value;
+    else if (key.startsWith("on")) el.addEventListener(key.slice(2), value);
+    else if (value === true) el.setAttribute(key, "");
+    else if (value !== false && value != null) el.setAttribute(key, value);
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false) continue;
+    el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+function store(key, value) {
+  try {
+    if (value === undefined) return JSON.parse(localStorage.getItem("py6." + key));
+    localStorage.setItem("py6." + key, JSON.stringify(value));
+  } catch (e) { return null; }
+}
+
+// Explanations are plain text. Lines that start with spaces are examples,
+// so they are shown in the code font.
+function renderExplain(text) {
+  const box = h("div", { class: "explain" });
+  for (const para of text.split("\n\n")) {
+    let words = [], code = [];
+    const flushWords = () => { if (words.length) { box.append(h("p", {}, ...words.flatMap((w, i) => i ? [h("br"), w] : [w]))); words = []; } };
+    const flushCode = () => { if (code.length) { box.append(h("pre", {}, code.join("\n"))); code = []; } };
+    for (const line of para.split("\n")) {
+      if (/^\s{2,}\S/.test(line)) { flushWords(); code.push(line.replace(/^\s{2,3}/, "")); }
+      else { flushCode(); words.push(line); }
+    }
+    flushWords(); flushCode();
+  }
+  return box;
+}
+
+// ---------- Python (Pyodide) ----------
+let runPy = null;
+const statusEl = document.getElementById("status");
+const readyWaiters = [];
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = h("script", { src });
+    s.onload = resolve; s.onerror = () => reject(new Error("Could not load " + src));
+    document.head.append(s);
+  });
+}
+
+async function startPython() {
+  const base = document.querySelector('meta[name="pyodide-base"]').content;
+  try {
+    await loadScript(base + "pyodide.js");
+    const pyodide = await loadPyodide({ indexURL: base });
+    for (const [name, text] of Object.entries(DATA.files)) pyodide.FS.writeFile(name, text);
+    pyodide.runPython("import sys, os; sys.path.insert(0, os.getcwd())");
+    const run = pyodide.pyimport("web_runner").run;
+    runPy = (code, answers, seed) => {
+      const pyAnswers = pyodide.toPy(answers);
+      const result = run(code, pyAnswers, seed);
+      const plain = result.toJs({ dict_converter: Object.fromEntries });
+      result.destroy(); pyAnswers.destroy();
+      return plain;
+    };
+    statusEl.textContent = "Python ready";
+    statusEl.dataset.state = "ready";
+  } catch (error) {
+    console.error(error);
+    statusEl.textContent = "Python could not load. Check your internet and refresh.";
+    statusEl.dataset.state = "failed";
+  }
+  readyWaiters.splice(0).forEach(fn => fn());
+}
+
+// ---------- the code runner (editor + output) ----------
+function makeRunner(startCode, { file = "main.py", autoRun = false } = {}) {
+  const editor = h("textarea", { class: "editor", spellcheck: "false", autocapitalize: "off", autocomplete: "off", "aria-label": "Python code" });
+  editor.value = startCode;
+  const runBtn = h("button", { class: "btn primary", type: "button" }, "▶ Run");
+  const resetBtn = h("button", { class: "btn", type: "button", title: "Put the original code back" }, "Reset");
+  const out = h("pre", { class: "out", "aria-live": "polite" });
+  const askLabel = h("div", { class: "ask-label" }, "Your program is asking a question. Type your answer and press Enter.");
+  const askInput = h("input", { type: "text", "aria-label": "Your answer", autocomplete: "off" });
+  const ask = h("form", { class: "ask", hidden: true }, askLabel, askInput, h("button", { class: "btn", type: "submit" }, "Send"));
+  const err = h("div", { class: "err", hidden: true });
+  const helper = h("div", { class: "helper", hidden: true });
+  const consoleBox = h("div", { class: "console", hidden: true }, h("div", { class: "console-head" }, "Output"), out, ask, err, helper);
+
+  let answers = [], seed = 0;
+
+  function fit() { editor.rows = Math.max(3, editor.value.split("\n").length + 1); }
+
+  function execute() {
+    consoleBox.hidden = false;
+    if (!runPy) {
+      out.replaceChildren(h("span", { class: "empty" }, statusEl.dataset.state === "failed"
+        ? "Python could not load, so code cannot run. Check your internet connection and refresh the page."
+        : "Python is still loading. Your code will run in a moment…"));
+      if (statusEl.dataset.state !== "failed") readyWaiters.push(execute);
+      return;
+    }
+    runBtn.disabled = true; runBtn.textContent = "Running…"; ask.hidden = true;
+    setTimeout(() => {
+      const r = runPy(editor.value, answers, seed);
+      runBtn.disabled = false; runBtn.textContent = "▶ Run";
+      if (r.output) out.textContent = r.output;
+      else out.replaceChildren(h("span", { class: "empty" }, r.error || r.waiting ? "" : "(Your program ran but did not print anything.)"));
+      err.hidden = !r.error; err.textContent = r.error;
+      helper.hidden = !r.hint; helper.replaceChildren(h("b", {}, "Helper"), r.hint);
+      ask.hidden = !r.waiting;
+      if (r.waiting) { askInput.value = ""; askInput.focus({ preventScroll: true }); askInput.scrollIntoView({ block: "nearest" }); }
+    }, 20);
+  }
+  function runFresh() { answers = []; seed = Math.floor(Math.random() * 1e9); execute(); }
+
+  ask.addEventListener("submit", e => { e.preventDefault(); answers.push(askInput.value); execute(); });
+  runBtn.addEventListener("click", runFresh);
+  resetBtn.addEventListener("click", () => { editor.value = startCode; fit(); editor.focus(); });
+
+  let escaped = false;
+  editor.addEventListener("input", fit);
+  editor.addEventListener("keydown", e => {
+    const { selectionStart: start, selectionEnd: end, value } = editor;
+    if (e.key === "Escape") { escaped = true; return; }
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runFresh(); return; }
+    if (e.key === "Tab" && !e.shiftKey && !escaped) {
+      e.preventDefault(); editor.setRangeText("    ", start, end, "end"); fit(); return;
+    }
+    if (e.key === "Enter" && !e.shiftKey) {
+      // Keep the same indentation, and add 4 spaces after a line ending in ":"
+      const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+      const current = value.slice(lineStart, start);
+      let indent = current.match(/^ */)[0];
+      if (current.trimEnd().endsWith(":")) indent += "    ";
+      e.preventDefault(); editor.setRangeText("\n" + indent, start, end, "end"); fit(); return;
+    }
+    escaped = false;
+  });
+  fit();
+
+  const el = h("div", { class: "runner" },
+    h("div", { class: "bar" }, h("span", { class: "file" }, file), resetBtn, runBtn),
+    editor, consoleBox);
+  if (autoRun) runFresh();
+  return el;
+}
+
+// ---------- progress ----------
+let stars = store("stars") || {};
+function starText(n, total) { return "★".repeat(n) + "☆".repeat(Math.max(0, total - n)); }
+
+// ---------- navigation ----------
+let view = store("view") || { kind: "lesson", lesson: 0, stage: "step", step: 0 };
+if (view.kind === "lesson" && !LESSONS[view.lesson]) view = { kind: "lesson", lesson: 0, stage: "step", step: 0 };
+
+function go(next) {
+  view = next; store("view", view); render();
+  document.getElementById("main").scrollTo?.(0, 0); window.scrollTo(0, 0);
+}
+
+function renderNav() {
+  const nav = document.getElementById("nav");
+  const items = [h("div", { class: "nav-label" }, "Lessons")];
+  LESSONS.forEach((lesson, i) => {
+    const got = stars[i + 1];
+    items.push(h("button", {
+      class: "nav-item" + (got != null ? " done" : ""), type: "button",
+      "aria-current": String(view.kind === "lesson" && view.lesson === i),
+      onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: 0 }),
+    }, h("span", { class: "nav-num" }, got != null ? "✓" : i + 1),
+       h("span", { class: "nav-title" }, lesson.title),
+       h("span", { class: "nav-stars", title: got != null ? `${got} of ${lesson.quiz.length} quiz answers right` : "" }, got != null ? starText(got, lesson.quiz.length) : "")));
+  });
+  items.push(h("div", { class: "nav-label" }, "Practice"));
+  items.push(h("button", { class: "nav-item", type: "button", "aria-current": String(view.kind === "sandbox"), onclick: () => go({ kind: "sandbox" }) },
+    h("span", { class: "nav-num" }, "✎"), h("span", { class: "nav-title" }, "Sandbox"), ""));
+  items.push(h("button", { class: "nav-item", type: "button", "aria-current": String(view.kind === "projects"), onclick: () => go({ kind: "projects", project: 0 }) },
+    h("span", { class: "nav-num" }, "★"), h("span", { class: "nav-title" }, "Mini projects"), ""));
+  nav.replaceChildren(...items);
+}
+
+function lessonHeader(i) {
+  const lesson = LESSONS[i];
+  return h("div", {},
+    h("div", { class: "eyebrow" }, `Lesson ${i + 1} of ${LESSONS.length}`),
+    h("h2", {}, lesson.title),
+    h("div", { class: "goal" }, h("b", {}, "Goal"), lesson.goal));
+}
+
+function renderStep(i, s) {
+  const lesson = LESSONS[i], step = lesson.steps[s], last = s === lesson.steps.length - 1;
+  const dots = lesson.steps.map((_, k) => h("button", {
+    class: "dot" + (k === s ? " now" : k < s ? " seen" : ""), type: "button", "aria-label": `Step ${k + 1}`,
+    onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: k }),
+  }));
+  return [
+    lessonHeader(i),
+    h("div", { class: "steps" }, dots, h("span", { class: "count" }, `Step ${s + 1} of ${lesson.steps.length}, then a quiz`)),
+    h("div", { class: "card" }, renderExplain(step.explain)),
+    h("div", {}, h("h3", {}, "Run it, then change it!"),
+      h("p", { class: "tip" }, "Press ▶ Run to see what happens. Then edit the code and run it again. Shortcut: ", h("kbd", {}, "Ctrl"), " + ", h("kbd", {}, "Enter"), ".")),
+    makeRunner(step.code, { file: `lesson${i + 1}_step${s + 1}.py` }),
+    h("div", { class: "nav-row" },
+      h("button", { class: "btn big", type: "button", disabled: s === 0, onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: s - 1 }) }, "← Back"),
+      h("button", { class: "btn big primary", type: "button", onclick: () => go(last
+        ? { kind: "lesson", lesson: i, stage: "quiz" }
+        : { kind: "lesson", lesson: i, stage: "step", step: s + 1 }) }, last ? "Quiz time →" : "Next step →")),
+  ];
+}
+
+function renderQuiz(i) {
+  const lesson = LESSONS[i];
+  let answered = 0, score = 0;
+  const result = h("div", { class: "card", hidden: true });
+  const questions = lesson.quiz.map((item, n) => {
+    const why = h("div", { class: "why", hidden: true });
+    const buttons = item.options.map((option, k) => h("button", {
+      class: "opt", type: "button",
+      onclick: () => {
+        const right = k === item.answer;
+        buttons.forEach(b => { b.disabled = true; });
+        buttons[item.answer].classList.add("right");
+        if (!right) buttons[k].classList.add("wrong");
+        why.hidden = false; why.className = "why " + (right ? "right" : "wrong");
+        why.replaceChildren(h("b", {}, right ? "Correct! " : `Not quite. The answer is ${LETTERS[item.answer]}. `), item.why);
+        answered++; if (right) score++;
+        if (answered === lesson.quiz.length) showResult();
+      },
+    }, h("b", {}, LETTERS[k]), option));
+    return h("div", { class: "card q" }, h("div", { class: "q-text" }, `${n + 1}. ${item.q}`), h("div", { class: "options" }, buttons), why);
+  });
+  function showResult() {
+    stars[i + 1] = Math.max(score, stars[i + 1] ?? 0); store("stars", stars); renderNav();
+    const total = lesson.quiz.length;
+    const words = score === total ? "Perfect score! You are a Python star!"
+      : score >= total / 2 ? "Good job! Look again at the ones you missed."
+      : "That's okay. Every programmer learns from mistakes. Read the lesson again and retry.";
+    result.hidden = false;
+    result.replaceChildren(
+      h("div", { class: "stars", "aria-hidden": "true" }, starText(score, total)),
+      h("div", { class: "score" }, `You got ${score} out of ${total}`), h("p", {}, words),
+      h("div", { class: "nav-row" },
+        h("button", { class: "btn big", type: "button", onclick: () => go({ kind: "lesson", lesson: i, stage: "quiz" }) }, "Try the quiz again"),
+        h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "lesson", lesson: i, stage: "challenge" }) }, "Your challenge →")));
+    result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  return [lessonHeader(i), h("h3", {}, "Quiz time! Tap an answer."), ...questions, result];
+}
+
+function renderChallenge(i) {
+  const lesson = LESSONS[i], c = lesson.challenge, next = i + 1 < LESSONS.length;
+  const hint = h("div", { class: "helper", hidden: true }, h("b", {}, "Hint"), c.hint);
+  const solution = h("div", { class: "card solution", hidden: true });
+  const runnerHolder = h("div", {}, makeRunner("# Write your program here\n", { file: "my_challenge.py" }));
+  solution.append(
+    h("b", {}, "One possible answer. Yours can be different and still be correct!"),
+    h("pre", {}, c.solution),
+    h("button", { class: "btn", type: "button", onclick: () => runnerHolder.replaceChildren(makeRunner(c.solution, { file: "answer.py", autoRun: true })) }, "Put this answer in the editor and run it"));
+  return [
+    lessonHeader(i),
+    h("div", { class: "card" }, h("div", { class: "eyebrow" }, "Your challenge"), h("p", { style: "margin:.3em 0 0;font-size:1.1rem" }, c.task)),
+    runnerHolder,
+    h("div", { class: "nav-row" },
+      h("div", { style: "display:flex;gap:8px;flex-wrap:wrap" },
+        h("button", { class: "btn", type: "button", onclick: () => { hint.hidden = false; } }, "Show a hint"),
+        h("button", { class: "btn", type: "button", onclick: () => { solution.hidden = false; } }, "Show the answer")),
+      next
+        ? h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "lesson", lesson: i + 1, stage: "step", step: 0 }) }, `Next: Lesson ${i + 2} →`)
+        : h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "projects", project: 0 }) }, "Try the mini projects →")),
+    hint, solution,
+  ];
+}
+
+function renderSandbox() {
+  return [
+    h("div", {}, h("div", { class: "eyebrow" }, "Practice"), h("h2", {}, "Sandbox")),
+    h("p", {}, "A free space to try anything. Mix what you learnt: print, variables, if, loops, lists, functions."),
+    makeRunner('name = input("What is your name? ")\nfor i in range(3):\n    print("Hello", name)\n', { file: "sandbox.py" }),
+  ];
+}
+
+function renderProjects(p) {
+  const project = DATA.projects[p] || DATA.projects[0];
+  const cards = DATA.projects.map((pr, k) => h("button", {
+    class: "card project", type: "button", "aria-current": String(k === p),
+    onclick: () => go({ kind: "projects", project: k }),
+  }, h("h3", {}, pr.name), h("small", {}, "Uses: " + pr.uses)));
+  return [
+    h("div", {}, h("div", { class: "eyebrow" }, "Practice"), h("h2", {}, "Mini projects"),
+      h("p", { class: "tip" }, "Real programs made from what you learnt. Press Run to play. Read the TRY THIS ideas at the bottom and change the code! (The turtle drawing project only works in the desktop version.)")),
+    h("div", { class: "projects" }, cards),
+    h("h3", {}, project.name),
+    makeRunner(project.code, { file: project.name.toLowerCase().replace(/\W+/g, "_") + ".py" }),
+  ];
+}
+
+function render() {
+  renderNav();
+  let parts;
+  if (view.kind === "sandbox") parts = renderSandbox();
+  else if (view.kind === "projects") parts = renderProjects(view.project || 0);
+  else if (view.stage === "quiz") parts = renderQuiz(view.lesson);
+  else if (view.stage === "challenge") parts = renderChallenge(view.lesson);
+  else parts = renderStep(view.lesson, Math.min(view.step || 0, LESSONS[view.lesson].steps.length - 1));
+  document.getElementById("main").replaceChildren(h("div", { class: "page" }, parts));
+}
+
+render();
+startPython();
+</script>
+</body>
+</html>

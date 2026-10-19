@@ -13,4 +13,6 @@ a sandbox where students can try code, and mini projects.
    - **Mac/Linux:** run `./run_playground.sh`
    - **Or:** `python playground.py`
 
+**No install?** Open `python_class6_playground/web/index.html` in a browser. The whole course runs there too.
+
 Full guide, lesson list and teacher notes: [python_class6_playground/README.md](python_class6_playground/README.md)

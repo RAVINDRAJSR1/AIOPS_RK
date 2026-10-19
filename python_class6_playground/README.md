@@ -36,6 +36,27 @@ cd AIOPS_RK/python_class6_playground
 > **Tip (Windows):** to open a terminal inside the folder, click the address bar in File Explorer,
 > type `cmd` and press Enter.
 
+### Or: run it in a web browser (no Python install needed)
+
+The `web/` folder has a browser version with the same lessons, quizzes, challenges, sandbox and
+projects. Python runs inside the browser using [Pyodide](https://pyodide.org) (real Python
+compiled for the web), so it works on school computers, Chromebooks and tablets.
+
+| How | What to do |
+|-----|------------|
+| **On your computer** | Double-click `web/index.html`. It opens in your browser (needs internet the first time to download Python). |
+| **Share a link with the class** | Turn on GitHub Pages: repo **Settings → Pages → Deploy from a branch**, pick the branch and `/ (root)`, then **Save**. The page will be at `https://<your-username>.github.io/AIOPS_RK/python_class6_playground/web/` |
+
+Differences from the terminal version:
+- When a program uses `input()`, an answer box appears under the output. The program then runs
+  again from the start with your answer filled in, so it looks just like typing in a terminal.
+- A loop that never ends is stopped automatically, with a helper message explaining why.
+- Progress (quiz stars) is saved in that browser.
+- The Turtle Drawing project only works in the terminal version.
+
+**Teachers:** after changing `lessons.py` or a project, run `python build_web.py` to copy the
+changes into `web/index.html`.
+
 ### Step 4: Use it
 
 1. Type your name when asked.
@@ -127,6 +148,9 @@ python_class6_playground/
 ├── playground.py      ← the interactive playground
 ├── lessons.py         ← all lesson text, examples, quizzes, challenges
 ├── projects/          ← mini programs to play, read and change
+├── web/index.html     ← browser version (open it in any browser)
+├── web_runner.py      ← runs code for the browser version
+├── build_web.py       ← copies lessons into web/index.html
 └── tests/             ← checks that every example works
 ```
 

@@ -47,6 +47,8 @@ ERROR_HINTS = {
     "IndexError": "That position does not exist. Remember positions start at 0, so a list of "
                   "3 items has positions 0, 1 and 2.",
     "AttributeError": "That thing does not have that method. Check the spelling after the dot.",
+    "TimeoutError": "Your program ran for too long. Is there a loop that never stops? "
+                    "Check that something inside the loop changes so it can end.",
 }
 
 
@@ -85,13 +87,16 @@ def show_code(source):
     print("  +" + "-" * 53)
 
 
-def explain_error(error_type):
+def error_hint(error_type):
     # Check the most specific error first (IndentationError is a kind of SyntaxError).
     for kind in getattr(error_type, "__mro__", ()):
         if kind.__name__ in ERROR_HINTS:
-            print(f"\n  HELPER: {ERROR_HINTS[kind.__name__]}")
-            return
-    print("\n  HELPER: Read the last line of the red message, it tells you what went wrong.")
+            return ERROR_HINTS[kind.__name__]
+    return "Read the last line of the red message, it tells you what went wrong."
+
+
+def explain_error(error_type):
+    print(f"\n  HELPER: {error_hint(error_type)}")
 
 
 def run_source(source):
