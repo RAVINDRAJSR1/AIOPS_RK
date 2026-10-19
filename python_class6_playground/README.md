@@ -3,17 +3,56 @@
 An interactive, step-by-step Python course for students aged 10–12.
 No experience needed. Everything runs in the terminal with plain Python, so there's nothing extra to install.
 
-## ▶️ How to start
+## ▶️ How to run the playground
 
-1. Install Python 3 from <https://www.python.org/downloads/> (on Windows, tick **"Add Python to PATH"**).
-2. Open a terminal (Command Prompt on Windows) inside this folder.
-3. Type:
+### Step 1: Install Python (one time only)
 
-   ```
-   python playground.py
-   ```
+1. Go to <https://www.python.org/downloads/> and download Python 3 (version 3.8 or newer).
+2. Run the installer. **On Windows, tick "Add Python to PATH"** on the first screen, then click *Install Now*.
+3. To check it worked, open a terminal and type `python --version` (`python3 --version` on Mac).
+   You should see something like `Python 3.12.4`.
 
-   (On Mac/Linux you may need `python3 playground.py`.)
+### Step 2: Get the playground files
+
+**Option A – Download ZIP (easiest, no Git needed)**
+1. Open <https://github.com/RAVINDRAJSR1/AIOPS_RK> in your browser.
+2. Click the green **Code** button, then **Download ZIP**.
+3. Unzip it (right-click, then *Extract All* on Windows) and open the `python_class6_playground` folder.
+
+**Option B – With Git**
+```
+git clone https://github.com/RAVINDRAJSR1/AIOPS_RK.git
+cd AIOPS_RK/python_class6_playground
+```
+
+### Step 3: Start the playground
+
+| Computer | What to do |
+|----------|------------|
+| **Windows** | Double-click **`run_playground.bat`** |
+| **Mac / Linux** | Open Terminal in the folder and type `./run_playground.sh` |
+| **Any computer (terminal)** | `python playground.py` (or `python3 playground.py` on Mac/Linux) |
+
+> **Tip (Windows):** to open a terminal inside the folder, click the address bar in File Explorer,
+> type `cmd` and press Enter.
+
+### Step 4: Use it
+
+1. Type your name when asked.
+2. Type `1` and press Enter to start Lesson 1.
+3. Keep pressing **Enter** to move forward. Press `T` to try code yourself, or `Q` to go back to the menu.
+4. Type `Q` in the main menu to quit. Progress is saved automatically.
+
+### If something goes wrong
+
+| Problem | Fix |
+|---------|-----|
+| `'python' is not recognized` | Python is not on PATH. Re-run the installer, choose *Modify*, and tick *Add Python to environment variables*. Or try `py playground.py`. |
+| `No such file or directory: playground.py` | You are in the wrong folder. `cd` into `python_class6_playground` first. |
+| `Permission denied` on `./run_playground.sh` | Run `chmod +x run_playground.sh` once, or use `python3 playground.py`. |
+| Program seems stuck | Press **Ctrl + C** to stop it. |
+| Turtle project shows an error | It needs a computer with a screen (not an online editor). On Linux run `sudo apt install python3-tk`. |
+| Want to start over | Delete the `progress.json` file. |
 
 ## 🧭 How every lesson works
 
@@ -83,7 +122,9 @@ NameError: name 'scor' is not defined
 
 ```
 python_class6_playground/
-├── playground.py      ← start here (the interactive playground)
+├── run_playground.bat  ← Windows: double-click to start
+├── run_playground.sh   ← Mac/Linux: ./run_playground.sh
+├── playground.py      ← the interactive playground
 ├── lessons.py         ← all lesson text, examples, quizzes, challenges
 ├── projects/          ← mini programs to play, read and change
 └── tests/             ← checks that every example works
