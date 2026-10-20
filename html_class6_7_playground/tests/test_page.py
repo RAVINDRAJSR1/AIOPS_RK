@@ -40,7 +40,7 @@ window.__added = [];
 
 
 @unittest.skipIf(sync_playwright is None, "Playwright is not installed")
-class PageTests(unittest.TestCase):
+class BrowserTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.pw = sync_playwright().start()
@@ -74,8 +74,12 @@ class PageTests(unittest.TestCase):
         for answer in ["HyperText Markup Language", "</p>", "<p><b>Hi</b></p>"]:
             page.locator(".opt", has_text=answer).first.click()
 
+
+@unittest.skipIf(sync_playwright is None, "Playwright is not installed")
+class PageTests(BrowserTest):
     def test_live_preview_and_keys(self):
         page = self.open()
+        page.click("nav >> text=Hello, HTML!")
         self.assertEqual(self.preview(page).locator("h1").inner_text(), "Hello, World!")
         editor = page.locator("#editor-step")
         editor.fill("<h2>Changed</h2>")
@@ -123,7 +127,7 @@ class PageTests(unittest.TestCase):
         page.click("text=Put this answer in the editor")
         page.click("text=Check my page")
         page.locator(".saved", has_text="Challenge complete").wait_for()
-        self.assertIn("done", page.locator("nav .nav-item").first.get_attribute("class"))
+        self.assertIn("done", page.locator("nav .nav-item", has_text="Hello, HTML!").get_attribute("class"))
 
         page.click("nav >> text=Scorecard")
         self.assertIn("Saved on this device", page.inner_text(".badge"))
@@ -164,6 +168,86 @@ class PageTests(unittest.TestCase):
         small = page.evaluate("""[...document.querySelectorAll('input, select, textarea')]
             .filter(el => parseFloat(getComputedStyle(el).fontSize) < 16).length""")
         self.assertEqual(small, 0)
+
+
+# One passing answer for each Chapter 9 mission (required checks only).
+MISSION_ANSWERS = {
+    "lists": '<ol type="1"><li>a</li><li>b</li><li>c</li><li>d</li></ol><ul type="square"><li>x</li></ul>',
+    "images": '<img src="tree.svg" alt="A green tree" width="100" height="90">',
+    "links": '<h2 id="top">Top</h2><a href="https://www.wikipedia.org">Wiki</a> <a href="#top">Up</a> <a href="page2.html">Next</a>',
+    "marquee": '<marquee behavior="alternate">Hi</marquee>',
+    "build": '<ol type="A"><li>Chess</li><li>Cricket</li><li>Kho-kho</li></ol><ul type="square"><li>Bat</li></ul>'
+             '<img src="football.svg" alt="Football" width="80" height="80"><a href="https://fifa.com">FIFA</a>',
+    "fix": '<img src="rocket.svg" alt="A red rocket" width="120" height="120">'
+           '<p>Visit <a href="https://en.wikipedia.org/wiki/Rocket">the rocket page</a></p>'
+           '<ol type="a"><li>Three</li><li>Two</li><li>One</li></ol>',
+    "exit": '<h2>Cities</h2><ol type="1"><li>Mumbai</li><li>Chennai</li><li>Pune</li></ol>'
+            '<h2>States</h2><ul type="square"><li>Kerala</li><li>Punjab</li><li>Bihar</li></ul>'
+            '<h2>Union territories</h2><ol type="i"><li>Ladakh</li><li>Puducherry</li><li>Chandigarh</li></ol>',
+}
+
+
+@unittest.skipIf(sync_playwright is None, "Playwright is not installed")
+class Chapter9Tests(BrowserTest):
+    def test_page_starts_with_the_hook(self):
+        page = self.open()
+        self.assertIn("Hook", page.inner_text("main h2"))
+        self.assertEqual(page.locator(".hook iframe").count(), 2)
+        self.assertIn("My Favorite Things", page.frame_locator(".hook iframe").nth(1).locator("h2").inner_text())
+        self.assertIn("Chapter 9", page.text_content("nav .nav-label >> nth=0"))
+        self.assertEqual(self.errors, [])
+
+    def test_every_mission_answer_passes_and_starters_do_not(self):
+        page = self.open()
+        result = page.evaluate("""answers => MISSIONS.filter(m => m.checks.length).map(m => {
+            const run = code => { const d = new DOMParser().parseFromString(code, 'text/html');
+              return m.checks.filter(c => !c.opt).every(c => c.test(d, code)); };
+            return [m.id, run(answers[m.id] || ''), run(m.starter)];
+        })""", MISSION_ANSWERS)
+        for mission_id, answer_ok, starter_ok in result:
+            self.assertTrue(answer_ok, mission_id)
+            self.assertFalse(starter_ok, mission_id)
+
+    def test_predict_run_and_complete_a_mission(self):
+        page = self.open()
+        page.evaluate("setStudent('Kabir')")
+        page.locator("nav .nav-item", has_text="Lists").first.click()
+        self.assertTrue(page.locator(".veil").is_visible())
+        lock = page.locator("text=Lock prediction and run")
+        self.assertTrue(lock.is_disabled())
+        page.fill("#predict-lists", "Letters become roman numerals")
+        lock.click()
+        self.assertFalse(page.locator(".veil").is_visible())
+        page.get_by_role("button", name='ol type="i"', exact=True).click()
+        self.assertIn('<ol type="i">', page.input_value("#editor-mission"))
+        page.get_by_role("button", name='ul type="square"', exact=True).click()
+        page.locator("#editor-mission").fill(page.input_value("#editor-mission").replace("</ol>", "  <li>Sleep</li>\n</ol>"))
+        page.locator(".saved", has_text="Kabir").wait_for()
+        self.assertEqual(page.locator(".checklist li.ok").count(), 3)
+        self.assertIn("done", page.locator("nav .nav-item", has_text="Lists").first.get_attribute("class"))
+        self.assertEqual(self.errors, [])
+
+    def test_links_explain_where_they_go(self):
+        page = self.open()
+        page.click("nav >> text=Links & colors")
+        page.fill("#predict-links", "It opens Wikipedia")
+        page.click("text=Lock prediction and run")
+        page.frame_locator("iframe.preview").locator("a", has_text="More information").click()
+        page.locator(".preview-note", has_text="Global link").wait_for()
+
+    def test_chapter_test(self):
+        page = self.open()
+        page.evaluate("setStudent('Meera')")
+        page.click("nav >> text=Chapter test")
+        check = page.locator("text=Check my answers")
+        self.assertTrue(check.is_disabled())
+        answers = page.evaluate("CH9_QUIZ.map(q => q.a)")
+        for i, a in enumerate(answers):
+            page.locator(f"input[name=ch9q{i}][value='{a}']").check()
+        check.click()
+        page.locator(".big-score", has_text="Score: 12 of 12").wait_for()
+        page.locator(".saved", has_text="Meera").wait_for()
+        self.assertIn("done", page.locator("nav .nav-item", has_text="Chapter test").get_attribute("class"))
 
 
 if __name__ == "__main__":

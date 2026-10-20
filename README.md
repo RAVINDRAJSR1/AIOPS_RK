@@ -19,7 +19,7 @@ Full guide, lesson list and teacher notes: [python_class6_playground/README.md](
 
 ## 🌐 HTML Playground for Class 6–7
 
-A step-by-step HTML course with a live preview, quizzes, self-checking challenges and a
+Starts with Chapter 9 "Build a Better Web Page" missions, then a step-by-step HTML course with a live preview, quizzes, self-checking challenges and a
 scorecard that shows each student's trend. Works on phones and iPads too.
 
 **Quick start:** open `html_class6_7_playground/index.html` in any browser.

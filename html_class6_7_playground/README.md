@@ -23,6 +23,26 @@ There is nothing to install.
 On phones there is a key bar with `<  >  /  =  "  Tab` and **Close tag**, because those are
 hard to find on a phone keyboard.
 
+## Start here: Chapter 9 "Build a Better Web Page"
+
+The playground opens with a Class 7 Advanced HTML section based on Chapter 9 (textbook
+pages 121–129). Each mission has a **Teacher asks** question and a **predict first** step:
+students write what they expect, then press **Lock prediction and run** to reveal the preview.
+A live checklist ticks off each step (bonus steps are marked), and finishing a mission logs it
+on the scorecard.
+
+| # | Mission | What students do |
+|---|---------|------------------|
+| 0 | Hook | Compare two pages with the same words and decide which one they would read |
+| 1 | Lists | `<ol>` / `<ul>` and the `type` attribute (1, A, a, I, i; disc, circle, square) |
+| 2 | Images | `src`, `alt`, `align`, `height`, `width`, `border`, with attribute cards |
+| 3 | Links & colors | Internal, local and global links; `link`, `alink`, `vlink`. Clicking a link explains what kind it is |
+| 4 | Marquee | slide, scroll and alternate (marked as legacy HTML) |
+| 5 | My Favorite Things | Build activity using everything so far |
+| 6 | Fix the code | Find two planted mistakes |
+| 7 | Exit task | Sort Indian cities, states and union territories into three styled lists |
+| 8 | Chapter test | 12 questions with page references; 10 or more completes the mission and the score is logged |
+
 ## Lessons
 
 | # | Lesson | You will learn |
@@ -39,7 +59,7 @@ hard to find on a phone keyboard.
 | 10 | A Complete Web Page | `<!DOCTYPE>`, `<head>`, `<body>`, `<header>`, `<nav>`, `<main>`, `<footer>` |
 
 Plus **Free practice**, a blank editor that remembers your work. Built-in pictures you can
-use anywhere: `cat.svg`, `sun.svg`, `tree.svg`, `rocket.svg`, `book.svg`.
+use anywhere: `cat.svg`, `sun.svg`, `tree.svg`, `rocket.svg`, `robot.svg`, `football.svg`, `book.svg`.
 
 ## Scorecard
 
