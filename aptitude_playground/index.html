@@ -30,6 +30,7 @@ input{width:100%;margin:6px 0}
 .mute{color:var(--mute)}.wide{overflow-x:auto}
 table{border-collapse:collapse;margin:8px 0;font-variant-numeric:tabular-nums}td,th{border:1px solid var(--line);padding:4px 10px;text-align:right}
 svg{max-width:100%;height:auto}
+#lb ul{padding-left:1.2em;display:grid;gap:6px;max-width:68ch}
 @media (max-width:520px){.opts{grid-template-columns:1fr}}
 </style>
 <main>
@@ -54,6 +55,11 @@ svg{max-width:100%;height:auto}
   </div>
   <div id="topics" class="grid"></div>
   <div class="card"><h2>Score trend</h2><select id="trendSel" onchange="drawTrend()" aria-label="Trend for"></select><div id="trend" class="wide"></div><p id="weak" class="mute"></p></div>
+</section>
+
+<section id="learn" class="card" hidden>
+  <p class="tag">Learn first</p><h2 id="lt"></h2><div id="lb"></div>
+  <div class="row"><button id="lgo" class="pri">Start questions</button><button onclick="show('home')">Back</button></div>
 </section>
 
 <section id="quiz" class="card" hidden>
@@ -136,6 +142,64 @@ const LOG=[["A deductive argument whose conclusion follows necessarily is","vali
 const ICT=[["RAM stands for","Random Access Memory","Read Access Memory","Run All Memory","Random Active Module"],["1 byte =","8 bits","4 bits","16 bits","10 bits"],["HTTP stands for","HyperText Transfer Protocol","High Text Transfer Protocol","HyperText Transmission Program","Hyper Transfer Text Process"],["An input device","keyboard","monitor","printer","speaker"],["Binary of decimal 10","1010","1001","1100","1110"],["URL stands for","Uniform Resource Locator","Universal Resource Link","Uniform Retrieval Locator","Unified Resource Line"],["CC in email means","carbon copy","common copy","central copy","closed copy"],["Not an operating system","MS Word","Linux","Windows","Android"],["Phishing is","tricking users into revealing data","a backup method","a programming language","hardware"],["1 KB =","1024 bytes","1000 bits","1024 bits","100 bytes"]];
 const ENV=[["The Kyoto Protocol deals with","greenhouse gas emissions","ozone only","wetlands","desertification"],["The Montreal Protocol deals with","ozone-depleting substances","greenhouse gases","wetlands","hazardous waste"],["The Ramsar Convention is about","wetlands","ozone","climate","oceans"],["Main human-made greenhouse gas","carbon dioxide","oxygen","nitrogen","argon"],["Number of Sustainable Development Goals","17","8","10","21"],["The Paris Agreement aims to keep warming well below","2 °C","1 °C","3 °C","5 °C"],["The National Green Tribunal was set up in","2010","2005","2015","2000"],["A renewable energy source","solar","coal","natural gas","petroleum"],["The Bhopal gas tragedy (1984) involved","methyl isocyanate","chlorine","carbon monoxide","ammonia"],["The Chipko movement was about","saving trees","saving rivers","wildlife","mining"]];
 const HED=[["UGC became a statutory body in","1956","1948","1953","1966"],["NEP 2020 targets higher-education GER of","50% by 2035","100% by 2030","30% by 2025","75% by 2040"],["NAAC is responsible for","accrediting higher education institutions","funding schools","conducting NET","medical education"],["Ancient Nalanda was in present-day","Bihar","Uttar Pradesh","Odisha","Gujarat"],["Ancient Takshashila is in present-day","Pakistan","Bihar","Nepal","Afghanistan"],["The Radhakrishnan Commission (1948–49) dealt with","university education","secondary education","primary education","technical education"],["The Kothari Commission worked during","1964–66","1948–49","1952–53","1986"],["NIRF is used for","ranking institutions","accrediting teachers","funding research","admissions"],["Article 21A (Right to Education) was added by the","86th Amendment","42nd Amendment","73rd Amendment","44th Amendment"]];
+// ---- teaching notes shown before a topic's questions ('|' separates points) ----
+const NOTES={
+A0:'Divisible by 3 or 9: digit sum divisible by 3 or 9.|By 4: last two digits; by 8: last three digits.|By 11: difference of alternate-digit sums is 0 or a multiple of 11.|Unit digit of powers: 2, 3, 7, 8 repeat every 4; 4 and 9 every 2; 0, 1, 5, 6 never change. Use (power mod 4), taking 4 when the remainder is 0.|1+2+…+n = n(n+1)/2; 1²+…+n² = n(n+1)(2n+1)/6.',
+A1:'HCF: common prime factors with the lowest powers.|LCM: all prime factors with the highest powers.|HCF × LCM = product of the two numbers.|HCF of fractions = HCF of numerators / LCM of denominators; LCM of fractions = LCM of numerators / HCF of denominators.',
+A2:'Multiply as whole numbers, then give the answer as many decimal places as both numbers have together.|To divide, shift the decimal in both numbers until the divisor is whole.|0.333… = 1/3; a repeating 0.ab… = ab/99.',
+A3:'BODMAS: Brackets, Of, Division, Multiplication, Addition, Subtraction.|(a+b)² = a² + 2ab + b²; (a−b)² = a² − 2ab + b²; a² − b² = (a+b)(a−b).|When the options are far apart, round the numbers and estimate.',
+A4:'√(ab) = √a × √b.|A perfect square ends only in 0, 1, 4, 5, 6 or 9.|Square root: pair up prime factors. Cube root: group them in threes.|Cube-root unit digits: 2↔8 and 3↔7 swap; the other digits stay the same.',
+A5:'Average = sum ÷ number of items.|If every item rises by k, the average rises by k.|Average of the first n natural numbers = (n+1)/2.|New item = new average + count × (change in average), using the count before the item was added.',
+A6:'Call the unknown x and turn the words into an equation.|Sum S, difference D: larger = (S+D)/2, smaller = (S−D)/2.|A two-digit number is 10a + b; reversed it is 10b + a; their difference is 9(a−b).',
+A7:'Write present ages as ax and bx from the ratio.|"n years ago": subtract n from each age; "after n years": add n.|The difference between two ages never changes.',
+A8:'aᵐ × aⁿ = aᵐ⁺ⁿ; aᵐ ÷ aⁿ = aᵐ⁻ⁿ; (aᵐ)ⁿ = aᵐⁿ.|a⁰ = 1; a⁻ⁿ = 1/aⁿ; a^(1/n) = ⁿ√a.|Rationalise 1/(√a+√b) by multiplying top and bottom by (√a−√b).',
+A9:'x% of N = xN/100.|Up r% then down r% gives a net fall of r²/100 %.|If A is r% more than B, B is r/(100+r) × 100 % less than A.|Learn these: 1/8 = 12.5%, 1/6 = 16.67%, 1/3 = 33.33%.',
+A10:'Profit = SP − CP. Profit % and loss % are always on CP.|SP = CP × (100 + gain%)/100, or CP × (100 − loss%)/100.|Discount is on the marked price: SP = MP × (100 − d)/100.|Two items sold at the same price, one at x% gain and one at x% loss: overall loss = x²/100 %.',
+A11:'Divide N in the ratio a:b → shares aN/(a+b) and bN/(a+b).|In a:b :: c:d, ad = bc.|Mean proportional of a and c = √(ac).',
+A12:'Profit share ∝ capital × time.|If the time is equal, share by capital alone.|Pay a working partner\'s salary first, then split the rest.',
+A13:'More men → more work (direct); more men → fewer days (inverse).|M₁D₁H₁/W₁ = M₂D₂H₂/W₂.',
+A14:'If A does a job in n days, A does 1/n of it per day.|Together: 1/a + 1/b per day; time = ab/(a+b).|Shortcut: take the LCM of the days as the total units of work.',
+A15:'Filling pipes add, emptying pipes subtract.|Fill in a hours, empty in b hours (b > a): together it fills in ab/(b−a) hours.',
+A16:'Speed = distance ÷ time.|km/h → m/s: × 5/18; m/s → km/h: × 18/5.|Average speed over equal distances at x and y = 2xy/(x+y).',
+A17:'Passing a pole or a person: distance = train length.|Passing a platform or bridge: train length + platform length.|Relative speed: add for opposite directions, subtract for the same direction.',
+A18:'Downstream = boat + stream; upstream = boat − stream.|Boat = (down + up)/2; stream = (down − up)/2.',
+A19:'Alligation: cheaper : dearer = (dearer − mean) : (mean − cheaper).|Taking y litres out of x litres and refilling with water, n times: pure left = x(1 − y/x)ⁿ.',
+A20:'SI = P × R × T / 100; Amount = P + SI.|If a sum doubles in T years, R = 100/T %.',
+A21:'A = P(1 + R/100)ⁿ; CI = A − P.|Half-yearly: use R/2 and 2n.|CI − SI over 2 years = P(R/100)².',
+A22:'log(xy) = log x + log y; log(x/y) = log x − log y.|log xⁿ = n log x; logₐ a = 1; logₐ 1 = 0.|Change of base: logₐ x = log x / log a.',
+A23:'Rectangle: l × b, perimeter 2(l+b). Square: a².|Triangle: ½ × base × height; equilateral (√3/4)a²; Heron: √(s(s−a)(s−b)(s−c)).|Circle: πr², circumference 2πr (take π = 22/7).',
+A24:'Cuboid: lbh, surface 2(lb+bh+hl). Cube: a³, surface 6a².|Cylinder: πr²h, curved surface 2πrh. Cone: ⅓πr²h, curved surface πrl.|Sphere: (4/3)πr³, surface 4πr².',
+A25:'"A beats B by x m" in an L m race: when A runs L, B runs L − x.|In the same time, distances are in the ratio of speeds.|"A gives B a start of x m": B begins x m ahead.',
+A26:'Odd days = days left over after full weeks.|Ordinary year: 1 odd day; leap year: 2.|100 years: 5 odd days; 200: 3; 300: 1; 400: 0.|0 odd days = Sunday, 1 = Monday, and so on.|Leap year: divisible by 4; a century year must be divisible by 400.',
+A27:'Minute hand moves 6° a minute; hour hand 0.5° a minute.|Angle at H:M = |30H − 5.5M| (use 360 minus it if over 180).|The hands meet every 65 5/11 minutes.',
+A28:'Dividend is paid on the face value (usually ₹100), not the market price.|Income = investment × rate ÷ market price (face value ₹100).|Yield % = dividend ÷ market price × 100.',
+A29:'nPr = n!/(n−r)!: order matters (arrangements).|nCr = n!/(r!(n−r)!): order does not matter (selections).|nCr = nC(n−r).|Letters with repeats: n!/(p! q! …).',
+A30:'P(E) = favourable outcomes ÷ total outcomes; 0 ≤ P ≤ 1.|P(not E) = 1 − P(E).|Two dice: 36 outcomes. Cards: 52, 4 suits of 13, 12 face cards.|P(A or B) = P(A) + P(B) − P(A and B).',
+A31:'Present worth PW = 100 × Amount / (100 + RT).|True discount TD = Amount − PW = simple interest on PW.',
+A32:'Banker\'s discount BD = simple interest on the face value = A × R × T/100.|Banker\'s gain BG = BD − TD = simple interest on TD.|TD = √(PW × BG).',
+A33:'tan θ = height ÷ base distance.|tan 30° = 1/√3, tan 45° = 1, tan 60° = √3.|Elevation is looking up; depression is looking down. They are equal as alternate angles.',
+A34:'Check differences (arithmetic), ratios (geometric), squares or cubes ± 1, alternate terms and primes.|Odd one out: find the rule that all but one item follow.',
+A35:'Read the headings and units first.|% change = (new − old)/old × 100.|Estimate when the options are far apart.',
+A36:'Bar length shows the value; check the scale.|Compare growth by differences and shares by division.',
+A37:'Value = share% × total/100.|Central angle = share% × 3.6°.',
+A38:'The steepest upward segment is the biggest rise.|Average = sum ÷ count.|If there are two lines, check which axis each one uses.',
+J0:'Piaget\'s stages: sensorimotor 0–2, preoperational 2–7, concrete operational 7–11, formal operational 11+.|Vygotsky: Zone of Proximal Development, scaffolding, learning through language and social interaction.|Pavlov: classical conditioning. Skinner: operant conditioning (reinforcement). Thorndike: trial and error (laws of readiness, exercise, effect). Köhler: insight. Bandura: learning by observing.|Kohlberg\'s moral levels: pre-conventional, conventional, post-conventional.|Gardner: multiple intelligences. IQ = mental age ÷ chronological age × 100.|Inclusive education, CCE, RTE Act 2009 (ages 6–14).',
+J1:'Parts of speech: संज्ञा, सर्वनाम, विशेषण, क्रिया, क्रिया-विशेषण।|समास: द्वंद्व (दोनों पद प्रधान: माता-पिता), द्विगु (पहला पद संख्या: चौराहा), बहुव्रीहि (अन्य अर्थ: नीलकंठ = शिव), तत्पुरुष, कर्मधारय, अव्ययीभाव।|दीर्घ संधि: विद्या + आलय = विद्यालय।|कारक चिह्न: ने (कर्ता), को (कर्म), से/द्वारा (करण), का/के/की (संबंध), में/पर (अधिकरण)।|पर्यायवाची: कमल = पंकज, सूर्य = दिनकर। विलोम: दिन × रात।',
+J2:'Parts of speech: noun, pronoun, verb, adjective, adverb, preposition, conjunction, interjection.|Subject–verb agreement: he/she/it + verb-s (She goes).|"an" before a vowel sound (an honest man); "a" before a consonant sound (a university).|Passive: object + be + past participle + by + subject; "be" keeps the tense of the active verb.|Teaching: children learn language by using it, through stories, talk and a print-rich classroom.',
+J3:'Covers number system, HCF/LCM, percentage, ratio, average, area and simple interest. Each question names its source chapter; open that Aptitude chapter for its notes.|Pedagogy: go from concrete to pictures to symbols, and use examples from daily life.|Children\'s errors show how they think; use them for diagnosis, not punishment.|Van Hiele levels describe how children learn geometry.',
+J4:'Photosynthesis: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂, in chloroplasts, using sunlight.|Deficiencies: vitamin A → night blindness, B1 → beriberi, C → scurvy, D → rickets; iodine → goitre; iron → anaemia.|SI units: force newton, energy joule, power watt, pressure pascal.|Water boils at 100 °C and freezes at 0 °C. pH 7 is neutral; below 7 is acidic.|EVS teaching: observe, do activities, use the local environment.',
+J5:'Jharkhand: formed 15 Nov 2000 (Birsa Munda\'s birth anniversary); capital Ranchi; lies on the Chotanagpur plateau.|Minerals: coal (Jharia), iron ore, copper (Ghatsila), mica.|Movements: Santhal Hul 1855 (Sidhu–Kanhu), Ulgulan 1899–1900 (Birsa Munda), Tana Bhagat movement.|Constitution in force 26 Jan 1950: Fundamental Rights Part III, Directive Principles Part IV, Fundamental Duties Part IVA (Art. 51A).',
+U0:'Levels of teaching: memory (Herbart), understanding (Morrison), reflective (Hunt).|Bloom\'s cognitive domain: knowledge, comprehension, application, analysis, synthesis, evaluation (revised: remember → create).|Evaluation: formative (during), summative (at the end), diagnostic. Norm-referenced compares learners; criterion-referenced compares with a standard.|Learner-centred methods: discussion, projects, ICT (SWAYAM, MOOCs).',
+U1:'Types of research: fundamental, applied, action; descriptive, experimental, ex post facto.|Steps: problem → literature review → hypothesis → design → data → analysis → report.|Null hypothesis H₀: no difference. Type I error: rejecting a true H₀.|Sampling: probability (simple random, stratified, cluster, systematic) vs non-probability (convenience, quota, snowball, purposive).|Ethics: avoid plagiarism; citation styles APA and MLA; theses repository Shodhganga.',
+U2:'Read the questions first, then the passage.|Answer only from the passage, not from outside knowledge.|The main idea is often in the first or last lines.|Be wary of options with extreme words such as "always" or "never".',
+U3:'Process: sender → encoding → message → channel → decoding → receiver → feedback. Noise disturbs it.|Non-verbal: kinesics (body movement), proxemics (space), paralanguage (tone), chronemics (time).|Formal vs informal (grapevine) communication.|Barriers: semantic, physical, psychological. Good classroom communication is two-way.',
+U4:'Covers series, percentage, ratio, average, profit & loss, time & work, ages and interest. Each question names its source chapter; open that Aptitude chapter for its notes.|Work from the options and estimate when they are far apart.',
+U5:'Statement forms: A = All S are P, E = No S are P, I = Some S are P, O = Some S are not P.|A–O and E–I are contradictories; A–E are contraries; I–O are subcontraries.|Valid: the conclusion follows necessarily. Sound: valid with true premises.|Pramanas: pratyaksha (perception), anumana (inference), upamana (comparison), shabda (testimony), arthapatti (postulation), anupalabdhi (non-apprehension).',
+U6:'Read the headings and units first.|% change = (new − old)/old × 100. Pie value = share% × total/100; angle = share% × 3.6°.|Estimate when the options are far apart.',
+U7:'1 byte = 8 bits; 1 KB = 1024 bytes.|RAM is volatile; ROM is non-volatile.|Number systems: binary, decimal, hexadecimal (10 = 1010 in binary).|Internet terms: URL, HTTP/HTTPS, IP address, DNS; email CC and BCC.|Security: phishing, malware, firewall. E-learning: SWAYAM, NPTEL, e-PG Pathshala, NDL.',
+U8:'Greenhouse gases: CO₂, CH₄, N₂O.|Agreements: Ramsar 1971 (wetlands), Montreal 1987 (ozone), Kyoto 1997 (greenhouse gases), Paris 2015 (well below 2 °C), SDGs 2015–2030 (17 goals).|India: National Green Tribunal 2010; NAPCC 2008 (8 missions).|Bhopal gas tragedy 1984: methyl isocyanate (MIC).',
+U9:'Ancient centres: Takshashila, Nalanda, Vikramashila, Vallabhi.|Commissions: Radhakrishnan 1948–49 (university), Mudaliar 1952–53 (secondary), Kothari 1964–66.|UGC: set up 1953, statutory 1956. NAAC accredits; NIRF ranks.|NEP 2020: GER 50% by 2035; 5+3+3+4 school structure.|Constitution: Art. 21A, Right to Education (86th Amendment, 2002); education moved to the Concurrent List by the 42nd Amendment (1976).'};
+function learn(k){$('lt').textContent=TN(k);$('lb').innerHTML='<ul>'+NOTES[k].split('|').map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>';$('lgo').onclick=()=>run([k]);show('learn')}
 // ---- segments ----
 const SEG={
  A:{n:'Aptitude',d:'R.S. Aggarwal, 39 chapters',t:T.map(t=>[t[0],t[1]])},
@@ -156,7 +220,7 @@ async function hash(s){if(crypto.subtle){const b=await crypto.subtle.digest('SHA
 async function login(create){const u=$('u').value.trim().toLowerCase(),p=$('p').value;if(!u||!p)return msg('Enter a name and PIN.');const h=await hash(u+':'+p);
   if(create){if(ldb[u])return msg('That name exists. Sign in instead.');ldb[u]={h,hist:[]};lsave(ldb)}else if(!ldb[u]||ldb[u].h!=h)return msg('Wrong name or PIN.');
   hist=ldb[u].hist;saveRec=r=>lsave(ldb);$('who').innerHTML=`${esc(u)} · this device <button onclick="location.reload()">Sign out</button>`;enter()}
-function show(s){['login','home','quiz'].forEach(x=>$(x).hidden=x!=s);if(s=='home'){drawTabs();drawTopics();drawTrend()}}
+function show(s){['login','home','learn','quiz'].forEach(x=>$(x).hidden=x!=s);if(s=='home'){drawTabs();drawTopics();drawTrend()}}
 function enter(){try{seg=localStorage.getItem('aptSeg')||'A'}catch(e){}if(!SEG[seg])seg='A';fillTrendSel();show('home')}
 function setSeg(s){seg=s;try{localStorage.setItem('aptSeg',s)}catch(e){}fillTrendSel();show('home')}
 function drawTabs(){$('tabs').innerHTML=Object.entries(SEG).map(([k,v])=>`<button aria-pressed="${k==seg}" onclick="setSeg('${k}')">${v.n}</button>`).join('');
@@ -172,7 +236,8 @@ const gen=k=>SEG[k[0]].t[+k.slice(1)][1];
 function mk(k){const g=gen(k)();let o=g.opts?[...g.opts]:null;if(!o){if(g.str){const s=new Set([g.a]);for(let j=0;j<12&&s.size<4;j++)s.add(gen(k)().a);o=[...s]}
   else{const I=Number.isInteger(g.a),s=new Set([g.a]),st=I?Math.max(1,Math.round(Math.abs(g.a)*.1)):Math.max(.1,+(Math.abs(g.a)*.1).toFixed(1));let n=1;while(s.size<4){const x=+(g.a+P([-1,1])*st*n).toFixed(I?0:2);if(x!==g.a)s.add(x);n++}o=[...s]}}
   return{...g,k,o:o.sort(()=>Math.random()-.5)}}
-function start(ks){const n=+$('count').value,seen=new Set(),qs=[];for(let i=0;i<n;i++){let q;for(let j=0;j<8;j++){q=mk(P(ks));if(!seen.has(q.q))break}seen.add(q.q);qs.push(q)}
+function start(ks){if(ks.length==1&&NOTES[ks[0]])return learn(ks[0]);run(ks)}
+function run(ks){const n=+$('count').value,seen=new Set(),qs=[];for(let i=0;i<n;i++){let q;for(let j=0;j<8;j++){q=mk(P(ks));if(!seen.has(q.q))break}seen.add(q.q);qs.push(q)}
   quiz={seg,qs,k:0,s:0,t0:Date.now()};show('quiz');render()}
 function render(){const q=quiz.qs[quiz.k];$('qt').textContent=TN(q.k)+(q.sub?' · '+q.sub:'');$('qn').textContent=`Q ${quiz.k+1}/${quiz.qs.length} · Score ${quiz.s}`;
   $('qv').innerHTML=q.v||'';$('qq').textContent=q.q;$('qf').textContent='';$('next').hidden=true;$('quit').textContent='Quit';
