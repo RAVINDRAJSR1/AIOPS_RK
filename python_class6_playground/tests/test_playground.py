@@ -162,6 +162,28 @@ class WebRunnerTests(unittest.TestCase):
         result = web_runner.run('try:\n    x = input("?")\nexcept Exception:\n    print("caught")')
         self.assertTrue(result["waiting"])
 
+    def test_every_solution_passes_its_checks(self):
+        for number, lesson in enumerate(LESSONS, start=1):
+            challenge = lesson["challenge"]
+            with self.subTest(lesson=number):
+                results = web_runner.check(challenge["solution"], challenge["checks"])
+                self.assertEqual([r["msg"] for r in results if not r["ok"]], [])
+                empty = web_runner.check('print("hello")', challenge["checks"])
+                self.assertFalse(all(r["ok"] for r in empty), "checks pass on a program that does nothing")
+
+    def test_check_reports_each_item(self):
+        checks = LESSONS[5]["challenge"]["checks"]  # positive / negative / zero
+        wrong = 'n = int(input())\nif n > 0:\n    print("Positive")\nelse:\n    print("Negative")'
+        self.assertEqual([r["ok"] for r in web_runner.check(wrong, checks)], [True, True, False])
+
+    def test_terminal_challenge_shows_checks(self):
+        answers = ["w", 'print("Riya")', 'print("Green Valley")', "run", ""]
+        out = io.StringIO()
+        with mock.patch.object(builtins, "input", fake_input(answers)), contextlib.redirect_stdout(out):
+            playground.run_challenge(LESSONS[0])
+        self.assertIn("[x] Shows two lines of text", out.getvalue())
+        self.assertIn("CHALLENGE COMPLETE", out.getvalue())
+
     def test_web_page_is_up_to_date(self):
         with open(build_web.PAGE, encoding="utf-8") as f:
             page = f.read()

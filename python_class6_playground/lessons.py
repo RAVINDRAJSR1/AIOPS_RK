@@ -7,6 +7,10 @@ Each lesson has:
   - steps      : small steps, each with an explanation and a code example
   - quiz       : questions to check you understood
   - challenge  : a small task to try on your own (with a hint and an answer)
+                 and checks that test a student's program:
+                   {"code": regex}   the code must match
+                   {"output": regex, "inputs": [...]}  run it with these answers;
+                                     what it prints must match
 
 Teachers: you can add your own lessons by copying one block below.
 """
@@ -81,6 +85,10 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"print\([\s\S]*print\(", "msg": "Uses print() at least two times"},
+                {"output": r"\S.*\n.*\S", "msg": "Shows two lines of text"},
+            ],
             "task": "Write a program that prints your name on one line and your school on the next line.",
             "hint": "Use print() two times. Put your words inside quotes.",
             "solution": 'print("Riya Sharma")\nprint("Green Valley School")',
@@ -171,6 +179,10 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"^\s*\w+\s*=.*\n(.*\n)*\s*\w+\s*=", "msg": "Makes at least two variables with ="},
+                {"output": r"\d+ years old", "msg": "Prints a sentence ending with '... years old'"},
+            ],
             "task": "Make variables for your pet's name and its age, then print: 'Tommy is 3 years old'.",
             "hint": "pet = \"Tommy\" and pet_age = 3, then print(pet, \"is\", pet_age, \"years old\")",
             "solution": 'pet = "Tommy"\npet_age = 3\nprint(pet, "is", pet_age, "years old")',
@@ -270,6 +282,10 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"\w+\s*\*\s*\w+", "msg": "Multiplies with *"},
+                {"output": r"\b84\b", "msg": "Prints the total, 84"},
+            ],
             "task": "A box has 7 rows of 12 chocolates. Store rows and per_row in variables and print the total.",
             "hint": "total = rows * per_row",
             "solution": 'rows = 7\nper_row = 12\ntotal = rows * per_row\nprint("Total chocolates:", total)',
@@ -366,6 +382,11 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"\.upper\(\)", "msg": "Uses .upper()"},
+                {"code": r"len\(", "msg": "Uses len()"},
+                {"output": r"^[^a-z\n]*[A-Z]{2,}[^a-z\n]*$", "msg": "Prints the name in CAPITAL letters"},
+            ],
             "task": "Store your name in a variable. Print it in CAPITALS and print how many letters it has.",
             "hint": "Use .upper() and len().",
             "solution": 'name = "Ananya"\nprint(name.upper())\nprint(len(name))',
@@ -430,6 +451,11 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"int\(\s*input\(", "msg": "Turns the answer into a number with int(input(...))"},
+                {"output": r"\b16\b", "inputs": ["2014"], "msg": "Born in 2014 gives 16"},
+                {"output": r"\b20\b", "inputs": ["2010"], "msg": "Born in 2010 gives 20"},
+            ],
             "task": "Ask the user for their birth year and print how old they will be in 2030.",
             "hint": "year = int(input(...)) then age = 2030 - year",
             "solution": 'year = int(input("Which year were you born? "))\nprint("In 2030 you will be", 2030 - year)',
@@ -540,6 +566,11 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"output": r"(?i)positive", "inputs": ["5"], "msg": "5 prints Positive"},
+                {"output": r"(?i)negative", "inputs": ["-3"], "msg": "-3 prints Negative"},
+                {"output": r"(?i)zero", "inputs": ["0"], "msg": "0 prints Zero"},
+            ],
             "task": "Ask for a number. Print 'Positive', 'Negative' or 'Zero'.",
             "hint": "Use if n > 0, elif n < 0, else.",
             "solution": (
@@ -648,6 +679,10 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"\bfor\b", "msg": "Uses a for loop"},
+                {"output": r"\b1\b[\s\S]*\b4\b[\s\S]*\b81\b[\s\S]*\b100\b", "msg": "Prints the squares from 1 up to 100"},
+            ],
             "task": "Print the squares of numbers from 1 to 10 (1, 4, 9, ... 100).",
             "hint": "for i in range(1, 11): print(i * i)",
             "solution": "for i in range(1, 11):\n    print(i, \"squared is\", i * i)",
@@ -735,6 +770,11 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"\bwhile\b", "msg": "Uses a while loop"},
+                {"output": r"\b10\b[\s\S]*\b9\b[\s\S]*\b1\b", "msg": "Counts down from 10 to 1"},
+                {"output": r"(?i)happy new year", "msg": "Ends with Happy New Year!"},
+            ],
             "task": "Use a while loop to print 10, 9, 8 ... 1 and then 'Happy New Year!'.",
             "hint": "Start n = 10, loop while n >= 1, and do n = n - 1 inside.",
             "solution": 'n = 10\nwhile n >= 1:\n    print(n)\n    n = n - 1\nprint("Happy New Year!")',
@@ -842,6 +882,12 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"\[.*\]", "msg": "Makes a list with [ ]"},
+                {"code": r"\.append\(", "msg": "Adds an item with .append()"},
+                {"code": r"\bfor\b", "msg": "Uses a for loop to print the items"},
+                {"output": r"^(.+\n){6,}", "msg": "Prints at least 6 foods, one per line"},
+            ],
             "task": "Make a list of 5 of your favourite foods. Add one more, then print each on its own line.",
             "hint": "foods = [...], foods.append(...), then a for loop.",
             "solution": (
@@ -952,6 +998,11 @@ LESSONS = [
             },
         ],
         "challenge": {
+            "checks": [
+                {"code": r"def\s+cube\s*\(", "msg": "Defines a function called cube"},
+                {"code": r"\breturn\b", "msg": "The function uses return"},
+                {"output": r"\b27\b", "msg": "cube(3) prints 27"},
+            ],
             "task": "Write a function cube(n) that returns n * n * n. Print cube(3).",
             "hint": "def cube(n):  then  return n * n * n",
             "solution": "def cube(n):\n    return n * n * n\n\nprint(cube(3))",

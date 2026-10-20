@@ -3,7 +3,8 @@
 ## 🐍 Python Playground for Class 6
 
 An interactive, step-by-step Python course for school students. It has 10 lessons, quizzes,
-a sandbox where students can try code, and mini projects.
+challenges that check the student's program, a scorecard with a trend chart, a sandbox where
+students can try code, and mini projects.
 
 **Quick start:**
 1. Install Python 3 from <https://www.python.org/downloads/> (on Windows tick *"Add Python to PATH"*).

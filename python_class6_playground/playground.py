@@ -185,6 +185,21 @@ def write_program():
         lines.append(text)
     if lines:
         run_source("\n".join(lines))
+    return "\n".join(lines)
+
+
+def show_checks(source, checks):
+    """Tick off each thing the challenge asks for."""
+    import web_runner  # imported here because web_runner imports this module
+
+    results = web_runner.check(source, checks)
+    print("\n  CHECKING YOUR PROGRAM:")
+    for item in results:
+        print(f"    [{'x' if item['ok'] else ' '}] {item['msg']}")
+    if all(item["ok"] for item in results):
+        print("\n  CHALLENGE COMPLETE! Brilliant work!")
+    else:
+        print("\n  Not finished yet. Fix the items without an x and try again.")
 
 
 # ---------------------------------------------------------------- lessons
@@ -225,12 +240,18 @@ def run_challenge(lesson):
     challenge = lesson["challenge"]
     title("YOUR CHALLENGE")
     print("  " + challenge["task"])
+    if challenge.get("checks"):
+        print("\n  Your program needs to:")
+        for item in challenge["checks"]:
+            print("    - " + item["msg"])
     while True:
         print("\n  W = write and run your program   H = hint")
         print("  S = show the answer               Enter = finish lesson")
         choice = ask("  Choose: ").lower()
         if choice == "w":
-            write_program()
+            source = write_program()
+            if source and challenge.get("checks"):
+                show_checks(source, challenge["checks"])
         elif choice == "h":
             print("\n  HINT: " + challenge["hint"])
         elif choice == "s":

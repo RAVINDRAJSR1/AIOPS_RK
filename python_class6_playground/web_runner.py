@@ -11,6 +11,7 @@ random is seeded the same way each time, so a replay behaves exactly the same.
 import contextlib
 import io
 import random
+import re
 import sys
 import traceback
 
@@ -78,3 +79,24 @@ def run(source, answers=(), seed=0):
             result["hint"] = error_hint(type(error))
     result["output"] = out.getvalue()
     return result
+
+
+def check(source, checks):
+    """Test a student's program against a challenge's checks.
+
+    Returns a list of {"msg": ..., "ok": True/False}, one per check.
+    """
+    runs = {}
+    results = []
+    for item in checks:
+        if "code" in item:
+            ok = re.search(item["code"], source, re.MULTILINE) is not None
+        else:
+            inputs = tuple(str(answer) for answer in item.get("inputs", ()))
+            if inputs not in runs:
+                runs[inputs] = run(source, inputs, seed=0)
+            result = runs[inputs]
+            ok = (not result["error"] and not result["waiting"]
+                  and re.search(item["output"], result["output"], re.MULTILINE) is not None)
+        results.append({"msg": item["msg"], "ok": ok})
+    return results

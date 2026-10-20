@@ -1663,7 +1663,7 @@ function renderScorecard() {
   const change = graded.length >= 4 ? Math.round(mean(secondHalf) - mean(firstHalf)) : null;
   const doneLabel = scoreFilter ? lessonsDone.size + " / " + (LESSONS.length + MISSION_COUNT) : String(lessonsDone.size);
   const tiles = h("div", { class: "tiles" },
-    h("div", { class: "tile" }, h("div", { class: "label" }, "Average score"), h("div", { class: "value" }, avg == null ? "–" : avg + "%"), h("div", { class: "sub" }, graded.length + " quizzes and tests")),
+    h("div", { class: "tile" }, h("div", { class: "label" }, "Average score"), h("div", { class: "value" }, avg == null ? "–" : avg + "%"), h("div", { class: "sub" }, graded.length + (graded.length === 1 ? " quiz or test" : " quizzes and tests"))),
     h("div", { class: "tile" }, h("div", { class: "label" }, "Trend"), h("div", { class: "value" }, change == null ? "–" : (change > 0 ? "▲ " : change < 0 ? "▼ " : "") + Math.abs(change) + "%"),
       h("div", { class: "sub" }, change == null ? "Needs 4 or more scores" : "Recent half vs earlier half")),
     h("div", { class: "tile" }, h("div", { class: "label" }, scoreFilter ? "Lessons & missions" : "Challenges passed"), h("div", { class: "value" }, doneLabel), h("div", { class: "sub" }, scoreFilter ? "Challenges and missions passed" : "Across all learners")),

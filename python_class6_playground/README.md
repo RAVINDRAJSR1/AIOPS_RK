@@ -118,6 +118,28 @@ After the lessons, try the **Projects** (press `P` in the menu):
 Students can play each project and press `V` to read its code. Every project file ends with
 **"TRY THIS"** ideas for changing it, which is where real learning happens.
 
+## ✅ Checking challenges
+
+Every challenge has checks that test the student's program. In the browser, press
+**Check my program**; in the terminal, write the program with `W`. The playground runs
+the program, typing test answers into `input()` where needed, and ticks off each item.
+For example, Lesson 6 checks that 5 prints Positive, -3 prints Negative and 0 prints Zero.
+Teachers can change the checks in `lessons.py` (see the note at the top of that file).
+
+## 📈 Scorecard (browser version)
+
+- Each student picks their name from the **Learner** menu at the top.
+- Finishing a **quiz** or passing a **challenge** logs it automatically.
+- Teachers and parents can tap **+ Add a score** to log class tests.
+- The **Scorecard** page shows the average score, the trend (recent scores compared with
+  earlier ones), challenges passed, a **trend chart** for each learner, and every score.
+  Filter by learner to see one student's progress.
+- From the shared claude.ai link, scores go to the link's **class database**, so everyone
+  sees the same scorecard. From the file or GitHub Pages, scores are saved in that browser.
+
+On phones there is a key bar with `(  )  :  "  =  [  ]` and Tab, because those are hard to
+find on a phone keyboard.
+
 ## 🧰 The Sandbox
 
 Press `S` in the menu (or `T` during a lesson) to open a safe place to type any Python.
