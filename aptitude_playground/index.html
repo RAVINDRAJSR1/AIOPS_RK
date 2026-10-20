@@ -1,67 +1,67 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
+<title>Exam Prep Playground</title>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Aptitude">
-<title>Aptitude Playground</title>
+<meta name="apple-mobile-web-app-title" content="Exam Prep">
 <style>
-:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--mute:#667085;--pri:#3b5bdb;--ok:#2b8a3e;--bad:#c92a2a;--line:#e3e6ee}
-@media (prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1c212b;--ink:#e8ebf2;--mute:#98a2b3;--pri:#748ffc;--ok:#51cf66;--bad:#ff6b6b;--line:#2c3340}}
+/* Layout: one column of cards under a sticky segment bar; topic tiles in a wrapping grid */
+:root{--bg:#f4f6fa;--card:#fff;--ink:#1b2230;--mute:#5f6b7d;--pri:#3451c7;--ok:#22803a;--bad:#c22f2f;--line:#dde2ec}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#11151c;--card:#1b212b;--ink:#e6eaf1;--mute:#97a2b4;--pri:#8199ff;--ok:#5ccf75;--bad:#ff7474;--line:#2b3341;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#11151c;--card:#1b212b;--ink:#e6eaf1;--mute:#97a2b4;--pri:#8199ff;--ok:#5ccf75;--bad:#ff7474;--line:#2b3341;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,sans-serif;padding:env(safe-area-inset-top) 16px 32px}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,"Segoe UI",sans-serif;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 32px}
 main{max-width:900px;margin:auto}
-header{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
-h1{font-size:1.3rem;margin:0}h2{font-size:1.1rem}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
-button,input,select{font:inherit;border-radius:10px;border:1px solid var(--line);padding:12px 14px;min-height:44px;background:var(--card);color:var(--ink)}
-button{cursor:pointer}.pri{background:var(--pri);color:#fff;border:0}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0}
+h1{font-size:1.25rem;margin:0}h2{font-size:1.05rem;margin:0 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;margin:12px 0}
+button,input,select{font:inherit;border-radius:10px;border:1px solid var(--line);padding:10px 14px;min-height:44px;background:var(--card);color:var(--ink)}
+button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.pri{background:var(--pri);color:var(--card);border:0}
 input{width:100%;margin:6px 0}
+.tabs{display:flex;gap:6px;overflow-x:auto}.tabs button[aria-pressed="true"]{background:var(--pri);color:var(--card);border-color:var(--pri)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
-.topic{text-align:left;display:flex;flex-direction:column;gap:4px}
-.tag{font-size:.75rem;color:var(--mute)}.old{color:var(--pri)}
+.topic{text-align:left;display:flex;flex-direction:column;gap:4px;margin:0}
+.tag{font-size:.78rem;color:var(--mute)}.old{color:var(--pri)}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.opts button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--card))}
-.opts button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,var(--card))}
+.opts button{text-align:left}
+.opts button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 16%,var(--card))}
+.opts button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 16%,var(--card))}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.mute{color:var(--mute)}table{border-collapse:collapse;margin:8px 0}td,th{border:1px solid var(--line);padding:4px 10px;text-align:right}
-svg{max-width:100%;height:auto}.hide{display:none}
-@media (max-width:480px){.opts{grid-template-columns:1fr}}
+.mute{color:var(--mute)}.wide{overflow-x:auto}
+table{border-collapse:collapse;margin:8px 0;font-variant-numeric:tabular-nums}td,th{border:1px solid var(--line);padding:4px 10px;text-align:right}
+svg{max-width:100%;height:auto}
+@media (max-width:520px){.opts{grid-template-columns:1fr}}
 </style>
-</head>
-<body><main>
-<header><h1>Aptitude Playground</h1><div id="who" class="row"></div></header>
+<main>
+<header><h1>Exam Prep Playground</h1><div id="who" class="row mute">Connecting…</div></header>
 
-<section id="login" class="card">
-  <h2>Sign in or create a profile</h2>
-  <p class="mute">Profiles and scores are saved on this device.</p>
+<section id="login" class="card" hidden>
+  <h2>Sign in on this device</h2>
+  <p class="mute">Cloud sync is not available here, so this profile and its scores stay on this device. Open the page from claude.ai to sync across devices.</p>
   <input id="u" placeholder="Name" autocomplete="username">
-  <input id="p" type="password" placeholder="PIN / password" autocomplete="current-password">
+  <input id="p" type="password" placeholder="PIN" autocomplete="current-password">
   <div class="row"><button class="pri" onclick="login()">Sign in</button><button onclick="login(1)">Create profile</button></div>
   <p id="lmsg" class="mute"></p>
 </section>
 
-<section id="home" class="hide">
-  <div class="card">
-    <div class="row">
-      <select id="filter" onchange="drawTopics()"><option value="all">All topics</option><option value="new">New topics</option><option value="old">Old (ticked) topics</option></select>
-      <select id="count"><option>5</option><option selected>10</option><option>20</option></select>
-      <button class="pri" onclick="startMix('new')">Mixed: new</button>
-      <button onclick="startMix('old')">Mixed: old</button>
-    </div>
+<section id="home" hidden>
+  <nav id="tabs" class="tabs" aria-label="Exam"></nav>
+  <div class="card row">
+    <select id="filter" onchange="drawTopics()" aria-label="Topic filter"><option value="all">All topics</option><option value="new">New topics</option><option value="old">Old (ticked) topics</option></select>
+    <select id="count" aria-label="Questions per quiz"><option>5</option><option selected>10</option><option>20</option></select>
+    <button class="pri" onclick="startMix()">Mixed quiz</button>
+    <span id="segInfo" class="mute"></span>
   </div>
   <div id="topics" class="grid"></div>
-  <div class="card"><h2>Score trend</h2><select id="trendSel" onchange="drawTrend()"></select><div id="trend"></div><div id="weak" class="mute"></div></div>
+  <div class="card"><h2>Score trend</h2><select id="trendSel" onchange="drawTrend()" aria-label="Trend for"></select><div id="trend" class="wide"></div><p id="weak" class="mute"></p></div>
 </section>
 
-<section id="quiz" class="card hide">
+<section id="quiz" class="card" hidden>
   <div class="row" style="justify-content:space-between"><b id="qt"></b><span id="qn" class="mute"></span></div>
-  <div id="qv"></div><p id="qq" style="font-size:1.1rem"></p>
+  <div id="qv" class="wide"></div><p id="qq" style="font-size:1.1rem"></p>
   <div id="qo" class="opts"></div>
   <p id="qf"></p>
-  <div class="row"><button id="next" class="pri hide" onclick="next()">Next</button><button onclick="show('home')">Quit</button></div>
+  <div class="row"><button id="next" class="pri" hidden onclick="next()">Next</button><button id="quit" onclick="show('home')">Quit</button></div>
 </section>
 </main>
 <script>
@@ -120,46 +120,78 @@ const T=[
 ['Pie Charts',()=>{const c=['Food','Rent','Travel','Education','Others'],p=[R(15,30),R(15,25),R(5,15),R(10,20)];p.push(100-p.reduce((a,b)=>a+b));const tot=R(2,10)*10000,i=R(0,4);let o=0;const arcs=p.map((x,j)=>{const a0=o/100*2*Math.PI,a1=(o+=x)/100*2*Math.PI,L=x>50?1:0;return`<path d="M80,80 L${80+70*Math.sin(a0)},${80-70*Math.cos(a0)} A70,70 0 ${L} 1 ${80+70*Math.sin(a1)},${80-70*Math.cos(a1)}Z" fill="hsl(${j*70},55%,55%)"/>`}).join('');return{v:`<svg viewBox="0 0 320 160">${arcs}${c.map((n,j)=>`<rect x="170" y="${15+j*25}" width="12" height="12" fill="hsl(${j*70},55%,55%)"/><text x="188" y="${26+j*25}" font-size="12" fill="currentColor">${n} ${p[j]}%</text>`).join('')}</svg>`,q:`Monthly spend is ₹${tot}. Amount on ${c[i]}?`,a:tot*p[i]/100}}],
 ['Line Graphs',()=>{const v=YRS.map(()=>R(10,90)*10);return{v:line(YRS,v,'Exports (₹ crore)'),...diQ(v)}}]
 ];
-// ---- storage & login (device-local; password stored as SHA-256 hash) ----
-const DB='aptPlay',load=()=>{try{return JSON.parse(localStorage.getItem(DB))||{}}catch(e){return{}}},save=d=>{try{localStorage.setItem(DB,JSON.stringify(d))}catch(e){}};
-let db=load(),me=null,quiz=null;
+// ---- question banks: [question, correct, wrong, wrong, wrong] ----
+const QB=arr=>()=>{const x=P(arr);return{q:x[0],a:x[1],opts:x.slice(1)}};
+const MIX=ids=>()=>{const i=P(ids);return{...T[i][1](),sub:T[i][0]}};
+const CDP=[["Who proposed four stages of cognitive development?","Jean Piaget","Lev Vygotsky","B.F. Skinner","Erik Erikson"],["Zone of Proximal Development (ZPD) is a concept of","Lev Vygotsky","Jean Piaget","Lawrence Kohlberg","Howard Gardner"],["Piaget's concrete operational stage covers roughly ages","7–11 years","0–2 years","2–7 years","11 years and above"],["The theory of Multiple Intelligences was given by","Howard Gardner","Charles Spearman","Alfred Binet","Daniel Goleman"],["Operant conditioning is associated with","B.F. Skinner","Ivan Pavlov","E.L. Thorndike","Albert Bandura"],["Classical conditioning experiments with dogs were done by","Ivan Pavlov","B.F. Skinner","Wolfgang Köhler","J.B. Watson"],["Learning by insight was shown in chimpanzee experiments by","Wolfgang Köhler","E.L. Thorndike","Ivan Pavlov","Jean Piaget"],["Stages of moral development were proposed by","Lawrence Kohlberg","Sigmund Freud","Erik Erikson","Alfred Adler"],["Observational (social) learning theory is linked with","Albert Bandura","B.F. Skinner","Carl Rogers","Abraham Maslow"],["Intelligence Quotient (IQ) =","(Mental age ÷ Chronological age) × 100","(Chronological age ÷ Mental age) × 100","Mental age × Chronological age","Mental age − Chronological age"],["Continuous and Comprehensive Evaluation (CCE) mainly aims to","assess all aspects of a child's development","reduce exams only","rank students","test memory"],["Dyslexia is a learning difficulty mainly related to","reading","hearing","movement","eyesight"],["The RTE Act 2009 gives free and compulsory education to children aged","6–14 years","3–14 years","6–18 years","5–15 years"],["The hierarchy of needs was proposed by","Abraham Maslow","Carl Rogers","Sigmund Freud","Alfred Adler"],["Trial-and-error learning theory was given by","E.L. Thorndike","Ivan Pavlov","B.F. Skinner","Kurt Lewin"],["Inclusive education means","all children learn together in the same school","separate schools for each ability","only gifted children","home schooling"]];
+const HIN=[["\"कमल\" का पर्यायवाची शब्द है","पंकज","अनल","अंबर","अनिल"],["\"दिन\" का विलोम शब्द है","रात","सुबह","प्रकाश","दोपहर"],["\"राम ने खाना खाया\" में \"ने\" किस कारक का चिह्न है","कर्ता","कर्म","करण","संबंध"],["\"नीलकंठ\" में समास है","बहुव्रीहि","द्वंद्व","द्विगु","अव्ययीभाव"],["\"विद्यालय\" का संधि-विच्छेद है","विद्या + आलय","विद्य + आलय","विद्या + लय","विद + आलय"],["\"आँख का तारा\" मुहावरे का अर्थ है","बहुत प्यारा","आँख का रोग","चमकदार","बहुत दूर"],["\"सूर्य\" का पर्यायवाची है","दिनकर","सुधाकर","रजनीश","हिमांशु"],["\"चौराहा\" में समास है","द्विगु","द्वंद्व","अव्ययीभाव","बहुव्रीहि"],["\"सुंदर\" शब्द है","विशेषण","संज्ञा","क्रिया","सर्वनाम"],["\"माता-पिता\" में समास है","द्वंद्व","द्विगु","तत्पुरुष","बहुव्रीहि"],["\"वह पढ़ता है\" में \"वह\" है","सर्वनाम","संज्ञा","विशेषण","क्रिया"]];
+const ENG=[["Synonym of \"rapid\"","quick","slow","calm","weak"],["Antonym of \"ancient\"","modern","old","antique","aged"],["Plural of \"child\"","children","childs","childes","childrens"],["She ___ to school every day.","goes","go","going","gone"],["Correct spelling","necessary","neccessary","necesary","neccesary"],["\"The sun rises in the east.\" Tense?","Simple present","Present continuous","Simple past","Present perfect"],["He is ___ honest man.","an","a","the","no article"],["\"He ran quickly.\" Part of speech of \"quickly\"","Adverb","Adjective","Verb","Noun"],["Passive of \"She writes a letter.\"","A letter is written by her.","A letter was written by her.","A letter is being written by her.","A letter has been written by her."],["Young learners best build reading readiness through","stories and a print-rich classroom","grammar drills","dictation only","memorising rules"],["Antonym of \"generous\"","mean","kind","liberal","noble"]];
+const SCI=[["Photosynthesis takes place in","chloroplasts","mitochondria","nucleus","ribosomes"],["Plants absorb which gas for photosynthesis?","Carbon dioxide","Oxygen","Nitrogen","Hydrogen"],["Deficiency of vitamin C causes","scurvy","rickets","night blindness","beriberi"],["Largest planet of the solar system","Jupiter","Saturn","Earth","Neptune"],["Water boils at sea level at","100 °C","90 °C","110 °C","80 °C"],["SI unit of force","newton","joule","watt","pascal"],["Red blood cells are made mainly in","bone marrow","liver","heart","kidneys"],["Deficiency of iodine causes","goitre","anaemia","scurvy","rickets"],["A non-renewable resource","coal","solar energy","wind","water"],["pH of pure water","7","0","14","1"],["The main source of energy for the earth","the Sun","the Moon","wind","coal"]];
+const SST=[["Jharkhand became a separate state on","15 November 2000","1 November 2000","9 November 2000","26 January 2001"],["Capital of Jharkhand","Ranchi","Jamshedpur","Dhanbad","Bokaro"],["Birsa Munda led the","Ulgulan","Santhal Hul","Kol revolt","Tana Bhagat movement"],["The Santhal Hul (1855) was led by","Sidhu and Kanhu","Birsa Munda","Tilka Manjhi","Budhu Bhagat"],["Jharkhand lies mostly on the","Chotanagpur plateau","Deccan plateau","Malwa plateau","Meghalaya plateau"],["Hundru Falls is on the river","Subarnarekha","Damodar","Koel","Barakar"],["Fundamental Rights are in which Part of the Constitution?","Part III","Part IV","Part II","Part V"],["The Constitution of India came into force on","26 January 1950","15 August 1947","26 November 1949","2 October 1950"],["Jharia is famous for","coal","iron ore","copper","mica"],["First Chief Minister of Jharkhand","Babulal Marandi","Arjun Munda","Shibu Soren","Hemant Soren"]];
+const TEA=[["The most important factor in effective teaching","teacher–student interaction","strict discipline","the teacher's dress","lengthy notes"],["Bloom's taxonomy classifies","educational objectives","teaching aids","school buildings","examinations"],["Highest level of Bloom's original cognitive domain","Evaluation","Knowledge","Application","Comprehension"],["Formative evaluation is done","during teaching","only at year end","before admission","after results"],["Summative evaluation is done","at the end of a course","at the start","daily","orally only"],["Memory level of teaching is associated with","Herbart","Morrison","Hunt","Piaget"],["Reflective level of teaching is associated with","Hunt","Herbart","Morrison","Bruner"],["Norm-referenced testing compares a learner with","other learners","a fixed criterion","the syllabus","the teacher"],["MOOC stands for","Massive Open Online Course","Multiple Online Open Class","Mass Online Offline Course","Modular Open Online Class"],["SWAYAM is","India's MOOC platform","a scholarship","a teacher test","a research journal"]];
+const RES=[["A hypothesis is","a tentative statement to be tested","a proven fact","a research report","a sample"],["Reasoning from specific observations to a general conclusion","inductive","deductive","analogical","circular"],["Plagiarism is","using others' work without acknowledgement","citing sources","peer review","paraphrasing with citation"],["Every member has an equal chance of selection in","simple random sampling","quota sampling","convenience sampling","snowball sampling"],["Action research mainly aims to","solve an immediate local problem","build theory only","study history","run national surveys"],["APA style is mainly used for","citation and referencing","statistical tests","sampling","data collection"],["The null hypothesis states","there is no relationship or difference","there is a significant difference","the sample is large","the result is proven"],["Ex post facto research studies","causes after the effect has occurred","future events","controlled experiments","opinions only"],["Shodhganga is a repository of","Indian theses and dissertations","paid journals","school textbooks","patents"],["A Likert scale measures","attitudes","height","IQ directly","speed"]];
+const COMP=[["\"Trees release oxygen and absorb carbon dioxide. Cities with more trees stay cooler in summer and have cleaner air.\" Cities with more trees are","cooler, with cleaner air","warmer","more crowded","noisier"],["\"Students who read for 20 minutes a day meet about 1.8 million words a year, which builds vocabulary.\" The passage mainly says daily reading","builds vocabulary","wastes time","is only for exams","reduces attention"],["\"Gutenberg's printing press (around 1440) made books cheaper and spread literacy across Europe.\" Its main effect was","cheaper books and wider literacy","more wars","fewer schools","costlier paper"],["\"Groundwater is used faster than rain can refill it. Rainwater harvesting helps recharge it.\" The suggested remedy is","rainwater harvesting","digging deeper wells","using more groundwater","building factories"],["\"Regular sleep improves memory because the brain sorts the day's learning at night.\" Sleep helps memory by","letting the brain sort learning","reducing study time","increasing hunger","stopping dreams"]];
+const COMM=[["Communication without words is","non-verbal communication","verbal communication","written communication","mass communication"],["Noise in communication is","anything that disturbs the message","loud sound only","feedback","the channel"],["Feedback in communication comes from the","receiver","sender","channel","noise"],["Classroom communication should mainly be","two-way","one-way","written only","non-verbal only"],["The grapevine is","informal communication","formal communication","mass media","written orders"],["Encoding is done by the","sender","receiver","channel","audience"],["Proxemics studies the use of","space","time","touch","voice"],["Kinesics studies","body movements and gestures","speech sounds","colours","distance"]];
+const LOG=[["A deductive argument whose conclusion follows necessarily is","valid","inductive","fallacious","probable"],["\"All S are P\" and \"No S are P\" are","contraries","contradictories","subcontraries","subalterns"],["\"All S are P\" and \"Some S are not P\" are","contradictories","contraries","subcontraries","subalterns"],["In Nyaya, knowledge through the senses is","Pratyaksha","Anumana","Upamana","Shabda"],["Knowledge by comparison in Indian logic is","Upamana","Anumana","Arthapatti","Anupalabdhi"],["Arthapatti means","postulation (presumption)","perception","testimony","non-apprehension"],["Book : Author :: Painting : ?","Painter","Canvas","Brush","Gallery"],["All roses are flowers; some flowers fade quickly. Therefore","nothing definite follows about roses","all roses fade quickly","some roses fade quickly","no rose fades"],["A is the father of B. B is C's sister. C is A's","child","father","brother","uncle"]];
+const ICT=[["RAM stands for","Random Access Memory","Read Access Memory","Run All Memory","Random Active Module"],["1 byte =","8 bits","4 bits","16 bits","10 bits"],["HTTP stands for","HyperText Transfer Protocol","High Text Transfer Protocol","HyperText Transmission Program","Hyper Transfer Text Process"],["An input device","keyboard","monitor","printer","speaker"],["Binary of decimal 10","1010","1001","1100","1110"],["URL stands for","Uniform Resource Locator","Universal Resource Link","Uniform Retrieval Locator","Unified Resource Line"],["CC in email means","carbon copy","common copy","central copy","closed copy"],["Not an operating system","MS Word","Linux","Windows","Android"],["Phishing is","tricking users into revealing data","a backup method","a programming language","hardware"],["1 KB =","1024 bytes","1000 bits","1024 bits","100 bytes"]];
+const ENV=[["The Kyoto Protocol deals with","greenhouse gas emissions","ozone only","wetlands","desertification"],["The Montreal Protocol deals with","ozone-depleting substances","greenhouse gases","wetlands","hazardous waste"],["The Ramsar Convention is about","wetlands","ozone","climate","oceans"],["Main human-made greenhouse gas","carbon dioxide","oxygen","nitrogen","argon"],["Number of Sustainable Development Goals","17","8","10","21"],["The Paris Agreement aims to keep warming well below","2 °C","1 °C","3 °C","5 °C"],["The National Green Tribunal was set up in","2010","2005","2015","2000"],["A renewable energy source","solar","coal","natural gas","petroleum"],["The Bhopal gas tragedy (1984) involved","methyl isocyanate","chlorine","carbon monoxide","ammonia"],["The Chipko movement was about","saving trees","saving rivers","wildlife","mining"]];
+const HED=[["UGC became a statutory body in","1956","1948","1953","1966"],["NEP 2020 targets higher-education GER of","50% by 2035","100% by 2030","30% by 2025","75% by 2040"],["NAAC is responsible for","accrediting higher education institutions","funding schools","conducting NET","medical education"],["Ancient Nalanda was in present-day","Bihar","Uttar Pradesh","Odisha","Gujarat"],["Ancient Takshashila is in present-day","Pakistan","Bihar","Nepal","Afghanistan"],["The Radhakrishnan Commission (1948–49) dealt with","university education","secondary education","primary education","technical education"],["The Kothari Commission worked during","1964–66","1948–49","1952–53","1986"],["NIRF is used for","ranking institutions","accrediting teachers","funding research","admissions"],["Article 21A (Right to Education) was added by the","86th Amendment","42nd Amendment","73rd Amendment","44th Amendment"]];
+// ---- segments ----
+const SEG={
+ A:{n:'Aptitude',d:'R.S. Aggarwal, 39 chapters',t:T.map(t=>[t[0],t[1]])},
+ J:{n:'JHTET',d:'Jharkhand TET: Papers I & II',t:[['Child Development & Pedagogy',QB(CDP)],['Language I: Hindi',QB(HIN)],['Language II: English',QB(ENG)],['Mathematics',MIX([0,1,3,5,9,10,11,20,23,24])],['Environmental Studies & Science',QB(SCI)],['Social Studies & Jharkhand GK',QB(SST)]]},
+ U:{n:'UGC NET',d:'Paper 1: 10 units',t:[['Teaching Aptitude',QB(TEA)],['Research Aptitude',QB(RES)],['Comprehension',QB(COMP)],['Communication',QB(COMM)],['Mathematical Reasoning & Aptitude',MIX([6,7,9,10,11,14,16,20,34])],['Logical Reasoning',QB(LOG)],['Data Interpretation',MIX([35,36,37,38])],['ICT',QB(ICT)],['People, Development & Environment',QB(ENV)],['Higher Education System',QB(HED)]]}};
+const key=(s,i)=>s+i,TN=k=>SEG[k[0]].t[+k.slice(1)][0];
+// ---- storage: claude.ai account + private db when available, else device-local PIN profile ----
+const LK='aptPlay2',lload=()=>{try{return JSON.parse(localStorage.getItem(LK))||{}}catch(e){return{}}},lsave=d=>{try{localStorage.setItem(LK,JSON.stringify(d))}catch(e){}};
+let hist=[],saveRec=null,seg='A',quiz=null,ldb=lload();
+const $=id=>document.getElementById(id),msg=t=>$('lmsg').textContent=t,esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function boot(){let db=null,user=null;
+  if(window.claude?.use){[db,user]=await Promise.all([claude.use('db'),claude.use('user')])}
+  if(db&&user){try{const id=await user.id(),me=await user.me();if(id){const col=db.collection('data/users/'+id);
+    hist=(await col.orderBy('d').limit(1000).get()).docs.map(d=>d.data());
+    saveRec=r=>col.doc(String(r.d)).set(r);$('who').textContent=(me.name||'Signed in')+' · synced';return enter()}}catch(e){}}
+  $('who').textContent='';show('login')}
 async function hash(s){if(crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return'x'+h}
 async function login(create){const u=$('u').value.trim().toLowerCase(),p=$('p').value;if(!u||!p)return msg('Enter a name and PIN.');const h=await hash(u+':'+p);
-  if(create){if(db[u])return msg('That name exists — sign in instead.');db[u]={h,hist:[]};save(db)}
-  else if(!db[u]||db[u].h!=h)return msg('Wrong name or PIN.');
-  me=u;try{sessionStorage.setItem('aptMe',u)}catch(e){}enter()}
-const $=id=>document.getElementById(id),msg=t=>$('lmsg').textContent=t;
-function logout(){me=null;try{sessionStorage.removeItem('aptMe')}catch(e){}$('who').innerHTML='';show('login')}
-function show(s){['login','home','quiz'].forEach(x=>$(x).classList.toggle('hide',x!=s));if(s=='home'){drawTopics();drawTrend()}}
-function enter(){$('who').innerHTML=`<span class="mute">${me}</span><button onclick="logout()">Sign out</button>`;
-  $('trendSel').innerHTML='<option value="-1">All quizzes</option>'+T.map((t,i)=>`<option value="${i}">${i+1}. ${t[0]}</option>`).join('');show('home')}
-function stats(i){const h=db[me].hist.filter(x=>x.t.includes(i));return h.length?Math.round(h.reduce((a,x)=>a+x.s/x.n,0)/h.length*100)+'% avg · '+h.length+' quiz':'Not tried'}
-function drawTopics(){const f=$('filter').value;$('topics').innerHTML=T.map((t,i)=>{const old=OLD.includes(i+1);if(f=='old'&&!old||f=='new'&&old)return'';
-  return`<button class="topic card" onclick="start([${i}])"><b>${i+1}. ${t[0]}</b><span class="tag ${old?'old':''}">${old?'Old ✓':'New'} · ${i<35?'Arithmetic':'Data Interpretation'}</span><span class="tag">${stats(i)}</span></button>`}).join('')}
-function startMix(k){start(T.map((_,i)=>i).filter(i=>OLD.includes(i+1)==(k=='old')))}
+  if(create){if(ldb[u])return msg('That name exists. Sign in instead.');ldb[u]={h,hist:[]};lsave(ldb)}else if(!ldb[u]||ldb[u].h!=h)return msg('Wrong name or PIN.');
+  hist=ldb[u].hist;saveRec=r=>lsave(ldb);$('who').innerHTML=`${esc(u)} · this device <button onclick="location.reload()">Sign out</button>`;enter()}
+function show(s){['login','home','quiz'].forEach(x=>$(x).hidden=x!=s);if(s=='home'){drawTabs();drawTopics();drawTrend()}}
+function enter(){try{seg=localStorage.getItem('aptSeg')||'A'}catch(e){}if(!SEG[seg])seg='A';fillTrendSel();show('home')}
+function setSeg(s){seg=s;try{localStorage.setItem('aptSeg',s)}catch(e){}fillTrendSel();show('home')}
+function drawTabs(){$('tabs').innerHTML=Object.entries(SEG).map(([k,v])=>`<button aria-pressed="${k==seg}" onclick="setSeg('${k}')">${v.n}</button>`).join('');
+  $('filter').hidden=seg!='A';$('segInfo').textContent=SEG[seg].d}
+function fillTrendSel(){$('trendSel').innerHTML=`<option value="${seg}">All ${SEG[seg].n} quizzes</option>`+SEG[seg].t.map((t,i)=>`<option value="${key(seg,i)}">${i+1}. ${t[0]}</option>`).join('')}
+function stats(k){const h=hist.filter(x=>x.t.includes(k));return h.length?Math.round(h.reduce((a,x)=>{const p=x.per.filter(z=>z[0]==k);return a+p.reduce((s,z)=>s+z[1],0)/p.length},0)/h.length*100)+'% avg · '+h.length+' quiz':'Not tried'}
+function drawTopics(){const f=seg=='A'?$('filter').value:'all';$('topics').innerHTML=SEG[seg].t.map((t,i)=>{const old=seg=='A'&&OLD.includes(i+1);if(f=='old'&&!old||f=='new'&&old)return'';
+  const tag=seg=='A'?`<span class="tag ${old?'old':''}">${old?'Old ✓':'New'} · ${i<35?'Arithmetic':'Data Interpretation'}</span>`:'';
+  return`<button class="topic card" onclick="start(['${key(seg,i)}'])"><b>${i+1}. ${esc(t[0])}</b>${tag}<span class="tag">${stats(key(seg,i))}</span></button>`}).join('')}
+function startMix(){let ks=SEG[seg].t.map((_,i)=>key(seg,i));if(seg=='A'&&$('filter').value!='all')ks=ks.filter(k=>OLD.includes(+k.slice(1)+1)==($('filter').value=='old'));start(ks)}
 // ---- quiz ----
-function mk(i){const g=T[i][1]();let o=g.opts;if(!o){if(g.str){const set=new Set([g.a]);const alt=[...Array(8)].map(()=>T[i][1]().a);for(const x of alt){if(set.size>3)break;set.add(x)}o=[...set]}
-  else{const I=Number.isInteger(g.a),s=new Set([g.a]),st=I?Math.max(1,Math.round(Math.abs(g.a)*.1)):Math.max(.1,+(Math.abs(g.a)*.1).toFixed(1));let k=1;while(s.size<4){const x=+(g.a+P([-1,1])*st*k).toFixed(I?0:2);if(x!==g.a)s.add(x);k++}o=[...s]}}
-  return{...g,i,o:o.sort(()=>Math.random()-.5)}}
-function start(ts){const n=+$('count').value;quiz={ts,qs:[...Array(n)].map(()=>mk(P(ts))),k:0,s:0,t0:Date.now()};show('quiz');render()}
-function render(){const q=quiz.qs[quiz.k];$('qt').textContent=`${q.i+1}. ${T[q.i][0]}`;$('qn').textContent=`Q ${quiz.k+1}/${quiz.qs.length} · Score ${quiz.s}`;
-  $('qv').innerHTML=q.v||'';$('qq').textContent=q.q;$('qf').textContent='';$('next').classList.add('hide');
-  $('qo').innerHTML=q.o.map((x,j)=>`<button onclick="pick(${j},this)">${x}</button>`).join('')}
-function pick(j,b){const q=quiz.qs[quiz.k],ok=q.o[j]===q.a;[...$('qo').children].forEach((c,k)=>{c.disabled=true;if(q.o[k]===q.a)c.classList.add('ok')});
-  if(ok)quiz.s++;else b.classList.add('bad');q.ok=ok;$('qf').textContent=ok?'Correct!':`Answer: ${q.a}${q.h?' — '+q.h:''}`;$('next').classList.remove('hide');$('next').textContent=quiz.k+1<quiz.qs.length?'Next':'Finish'}
-function next(){if(++quiz.k<quiz.qs.length)return render();
-  db[me].hist.push({d:Date.now(),t:[...new Set(quiz.qs.map(q=>q.i))],s:quiz.s,n:quiz.qs.length,sec:Math.round((Date.now()-quiz.t0)/1000),per:quiz.qs.map(q=>[q.i,q.ok?1:0])});save(db);
-  alert(`Score: ${quiz.s}/${quiz.qs.length}`);show('home')}
+const gen=k=>SEG[k[0]].t[+k.slice(1)][1];
+function mk(k){const g=gen(k)();let o=g.opts?[...g.opts]:null;if(!o){if(g.str){const s=new Set([g.a]);for(let j=0;j<12&&s.size<4;j++)s.add(gen(k)().a);o=[...s]}
+  else{const I=Number.isInteger(g.a),s=new Set([g.a]),st=I?Math.max(1,Math.round(Math.abs(g.a)*.1)):Math.max(.1,+(Math.abs(g.a)*.1).toFixed(1));let n=1;while(s.size<4){const x=+(g.a+P([-1,1])*st*n).toFixed(I?0:2);if(x!==g.a)s.add(x);n++}o=[...s]}}
+  return{...g,k,o:o.sort(()=>Math.random()-.5)}}
+function start(ks){const n=+$('count').value,seen=new Set(),qs=[];for(let i=0;i<n;i++){let q;for(let j=0;j<8;j++){q=mk(P(ks));if(!seen.has(q.q))break}seen.add(q.q);qs.push(q)}
+  quiz={seg,qs,k:0,s:0,t0:Date.now()};show('quiz');render()}
+function render(){const q=quiz.qs[quiz.k];$('qt').textContent=TN(q.k)+(q.sub?' · '+q.sub:'');$('qn').textContent=`Q ${quiz.k+1}/${quiz.qs.length} · Score ${quiz.s}`;
+  $('qv').innerHTML=q.v||'';$('qq').textContent=q.q;$('qf').textContent='';$('next').hidden=true;$('quit').textContent='Quit';
+  $('qo').innerHTML=q.o.map((x,j)=>`<button onclick="pick(${j},this)">${esc(x)}</button>`).join('')}
+function pick(j,b){const q=quiz.qs[quiz.k],ok=q.o[j]===q.a;[...$('qo').children].forEach((c,i)=>{c.disabled=true;if(q.o[i]===q.a)c.classList.add('ok')});
+  if(ok)quiz.s++;else b.classList.add('bad');q.ok=ok;$('qf').textContent=ok?'Correct!':`Answer: ${q.a}${q.h?'. '+q.h:''}`;$('next').hidden=false;$('next').textContent=quiz.k+1<quiz.qs.length?'Next':'Finish'}
+async function next(){if(++quiz.k<quiz.qs.length)return render();
+  const r={d:Date.now(),seg:quiz.seg,t:[...new Set(quiz.qs.map(q=>q.k))],s:quiz.s,n:quiz.qs.length,sec:Math.round((Date.now()-quiz.t0)/1000),per:quiz.qs.map(q=>[q.k,q.ok?1:0])};
+  hist.push(r);let note='Saved.';try{await saveRec(r)}catch(e){note='Could not save this score. Check your connection.'}
+  $('qv').innerHTML='';$('qo').innerHTML='';$('qq').textContent=`Finished: ${r.s}/${r.n} (${Math.round(r.s/r.n*100)}%) in ${r.sec}s.`;$('qf').textContent=note;$('next').hidden=true;$('quit').textContent='Back to topics'}
 // ---- trends ----
-function drawTrend(){if(!me)return;const sel=+$('trendSel').value,h=db[me].hist.filter(x=>sel<0||x.t.includes(sel)).slice(-20);
-  if(!h.length){$('trend').innerHTML='<p class="mute">No quizzes yet.</p>'}else{const W=600,H=180,x=i=>40+i*(W-60)/Math.max(1,h.length-1),y=v=>H-25-v*(H-45);
-  const pct=h.map(e=>sel<0?e.s/e.n:(()=>{const p=e.per.filter(z=>z[0]==sel);return p.reduce((a,z)=>a+z[1],0)/p.length})());
-  $('trend').innerHTML=`<svg viewBox="0 0 ${W} ${H}">${[0,.5,1].map(v=>`<line x1="40" x2="${W-20}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="5" y="${y(v)+4}" font-size="11" fill="currentColor">${v*100}%</text>`).join('')}
-  <polyline points="${pct.map((v,i)=>x(i)+','+y(v)).join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2.5"/>${pct.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="var(--pri)"><title>${new Date(h[i].d).toLocaleString()} · ${Math.round(v*100)}% · ${h[i].sec}s</title></circle>`).join('')}</svg>`}
-  const acc={};db[me].hist.forEach(e=>e.per.forEach(([i,o])=>{acc[i]=acc[i]||[0,0];acc[i][0]+=o;acc[i][1]++}));
-  const w=Object.entries(acc).filter(e=>e[1][1]>=3).map(([i,[a,n]])=>[+i,a/n]).sort((a,b)=>a[1]-b[1]).slice(0,3);
-  $('weak').innerHTML=w.length?'Focus next: '+w.map(([i,v])=>`<b>${T[i][0]}</b> (${Math.round(v*100)}%)`).join(', '):''}
-try{const s=sessionStorage.getItem('aptMe');if(s&&db[s]){me=s;enter()}}catch(e){}
+function drawTrend(){const sel=$('trendSel').value,all=sel.length==1,h=hist.filter(x=>all?(x.seg||'A')==sel:x.t.includes(sel)).slice(-20);
+  if(!h.length){$('trend').innerHTML='<p class="mute">No quizzes yet. Pick a topic above to start; each finished quiz adds a point here.</p>'}else{const W=600,H=180,x=i=>45+i*(W-70)/Math.max(1,h.length-1),y=v=>H-25-v*(H-45);
+  const pct=h.map(e=>{if(all)return e.s/e.n;const p=e.per.filter(z=>z[0]==sel);return p.reduce((a,z)=>a+z[1],0)/p.length});
+  $('trend').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Score trend">${[0,.5,1].map(v=>`<line x1="45" x2="${W-20}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="5" y="${y(v)+4}" font-size="11" fill="var(--mute)">${v*100}%</text>`).join('')}
+  <polyline points="${pct.map((v,i)=>x(i)+','+y(v)).join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2.5"/>${pct.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="${i==pct.length-1?6:4}" fill="var(--pri)"><title>${new Date(h[i].d).toLocaleString()} · ${Math.round(v*100)}% · ${h[i].sec}s</title></circle>`).join('')}
+  <text x="${x(pct.length-1)}" y="${y(pct.at(-1))-10}" font-size="12" text-anchor="end" fill="var(--ink)">${Math.round(pct.at(-1)*100)}%</text></svg>`}
+  const acc={};hist.forEach(e=>e.per.forEach(([k,o])=>{if(k[0]!=seg)return;acc[k]=acc[k]||[0,0];acc[k][0]+=o;acc[k][1]++}));
+  const w=Object.entries(acc).filter(e=>e[1][1]>=3).map(([k,[a,n]])=>[k,a/n]).sort((a,b)=>a[1]-b[1]).slice(0,3);
+  $('weak').innerHTML=w.length?'Focus next: '+w.map(([k,v])=>`<b>${esc(TN(k))}</b> (${Math.round(v*100)}%)`).join(', '):''}
+boot();
 </script>
-</body>
-</html>
