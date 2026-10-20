@@ -26,6 +26,7 @@
       <button role="tab" data-tab="schedule"><span class="ic">🌙</span>Downtime</button>
       <button role="tab" data-tab="location"><span class="ic">📍</span>Location</button>
       <button role="tab" data-tab="reports"><span class="ic">📊</span>Reports</button>
+      <button role="tab" data-tab="web"><span class="ic">🌐</span>Internet</button>
       <button role="tab" data-tab="settings"><span class="ic">⚙️</span>Settings</button>
     </div>
   </nav>
@@ -39,6 +40,11 @@
         <label class="field">Ends <input type="time" id="dt-end" required></label>
       </div>
       <div class="field">Days<div class="days" id="dt-days"></div></div>
+      <div class="field">What to lock
+        <label class="check"><input type="radio" name="dt-blocks" value="all" id="dt-all"> <span>All apps (except always-allowed)</span></label>
+        <label class="check"><input type="radio" name="dt-blocks" value="some" id="dt-some"> <span>Only these kinds of apps:</span></label>
+        <div class="days" id="dt-cats"></div>
+      </div>
       <div class="row between" style="margin-top:14px">
         <button class="btn outline" value="cancel" formnovalidate>Cancel</button>
         <button class="btn" value="save" id="dt-save">Save</button>
@@ -148,7 +154,7 @@
     function render() {
       if (!fam) return;
       if (!child() && tab !== 'settings') return renderNoChild();
-      ({ home: renderHome, limits: renderLimits, schedule: renderSchedule, location: renderLocation, reports: renderReports, settings: renderSettings })[tab]();
+      ({ home: renderHome, limits: renderLimits, schedule: renderSchedule, location: renderLocation, reports: renderReports, web: renderWeb, settings: renderSettings })[tab]();
     }
 
     function renderNoChild() {
@@ -194,6 +200,7 @@
 
     function statusPill(c) {
       if (c.rules.paused) return '<span class="pill bad">Paused</span>';
+      if ((c.rules.blockedCategories || []).length) return '<span class="pill bad">Games &amp; videos blocked</span>';
       const dt = C.activeDowntime(c.rules, IK.now());
       if (dt) return `<span class="pill warn">🌙 ${esc(dt.label)}</span>`;
       if (c.rules.dailyLimitMin && C.remainingToday(c, IK.now()) <= 0) return '<span class="pill bad">Limit reached</span>';
@@ -223,6 +230,7 @@
       const missing = Object.entries(c.permissions).filter(([, v]) => !v).map(([k]) => k);
       const events = fam.events.filter((e) => !e.childId || e.childId === c.id).slice(0, 6);
       const app = c.currentApp && isOnline(c) ? C.APP_BY_ID[c.currentApp] : null;
+      const funBlocked = (c.rules.blockedCategories || []).length > 0;
 
       view.innerHTML = `
         ${events.some((e) => e.type === 'sos' && Date.now() - e.ts < 30 * 60000) ? `<div class="alert bad" id="sos-alert">🚨 SOS from ${esc(c.name)} – check the <a href="#" data-go="location">location</a> now.</div>` : ''}
@@ -267,6 +275,14 @@
         </section>
 
         <section class="card">
+          <div class="row between">
+            <div><h2 style="margin:0">Games &amp; videos</h2>
+              <div class="muted small">${C.FUN_CATEGORIES.join(', ')} apps · ${C.APPS.filter((a) => C.FUN_CATEGORIES.includes(a.category)).map((a) => a.icon).join(' ')}</div></div>
+          </div>
+          <button class="btn block ${funBlocked ? 'good' : 'danger'}" id="fun-btn" style="margin-top:10px">${funBlocked ? '🔓 Unblock games &amp; videos' : '🔒 Block games &amp; videos'}</button>
+        </section>
+
+        <section class="card">
           <h2>Most used today <a href="#" class="small" data-go="reports">See all</a></h2>
           ${top.length ? `<ul class="list">${top.map(([id, m]) => `<li><div class="app-icon">${C.APP_BY_ID[id].icon}</div><div class="grow">${esc(C.APP_BY_ID[id].name)}</div><strong>${C.formatMin(m)}</strong></li>`).join('')}</ul>` : '<p class="muted">No app use yet today.</p>'}
         </section>
@@ -279,6 +295,11 @@
       $('#pause-btn').onclick = async () => {
         if (!canEdit()) return;
         await saveRules(Object.assign({}, c.rules, { paused: !c.rules.paused }), c.rules.paused ? 'Phone resumed' : 'Phone paused');
+      };
+      $('#fun-btn').onclick = () => {
+        if (!canEdit()) return;
+        saveRules(Object.assign({}, c.rules, { blockedCategories: funBlocked ? [] : C.FUN_CATEGORIES.slice() }),
+          funBlocked ? 'Games & videos unblocked' : 'Games & videos blocked');
       };
       view.querySelectorAll('[data-bonus]').forEach((b) => (b.onclick = async () => {
         if (!canEdit()) return;
@@ -373,10 +394,11 @@
           <ul class="list">
             ${r.downtime.map((w) => `
               <li>
-                <div class="app-icon">${/bed|night|sleep/i.test(w.label) ? '🌙' : '📚'}</div>
+                <div class="app-icon">${/bed|night|sleep/i.test(w.label) ? '🛏️' : '📚'}</div>
                 <div class="grow">
                   <div><strong>${esc(w.label)}</strong></div>
                   <div class="muted small">${w.start} – ${w.end} · ${w.days.length === 7 ? 'Every day' : w.days.map((d) => C.DAYS[d]).join(', ')}</div>
+                  <div class="chip small">🔒 ${w.blocks === 'all' ? 'All apps' : esc(w.blocks.join(', ') || 'Nothing')}</div>
                   <div class="row" style="margin-top:4px">
                     <button class="btn sm outline" data-edit="${esc(w.id)}">Edit</button>
                     <button class="btn sm outline" data-del="${esc(w.id)}">Delete</button>
@@ -406,7 +428,11 @@
     function editDowntime(w) {
       const d = $('#dt-dialog');
       const r = child().rules;
-      const cur = w || { label: 'Homework time', start: '16:00', end: '18:00', days: [1, 2, 3, 4, 5], enabled: true };
+      const cur = w || { label: 'Homework time', start: '16:00', end: '18:00', days: [1, 2, 3, 4, 5], blocks: C.FUN_CATEGORIES.slice(), enabled: true };
+      const someCats = Array.isArray(cur.blocks) ? cur.blocks : C.FUN_CATEGORIES;
+      $('#dt-all').checked = cur.blocks === 'all';
+      $('#dt-some').checked = cur.blocks !== 'all';
+      $('#dt-cats').innerHTML = C.CATEGORIES.map((n) => `<label><input type="checkbox" value="${n}" ${someCats.includes(n) ? 'checked' : ''}><span>${n}</span></label>`).join('');
       $('#dt-title').textContent = w ? 'Edit downtime' : 'Add downtime';
       $('#dt-label').value = cur.label;
       $('#dt-start').value = cur.start;
@@ -418,7 +444,9 @@
         const days = [...$('#dt-days').querySelectorAll('input:checked')].map((i) => +i.value);
         if (!days.length) return toast('Pick at least one day', 'bad');
         if ($('#dt-start').value === $('#dt-end').value) return toast('Start and end must differ', 'bad');
-        const next = { id: w ? w.id : Math.random().toString(36).slice(2, 8), label: $('#dt-label').value, start: $('#dt-start').value, end: $('#dt-end').value, days, enabled: w ? w.enabled : true };
+        const blocks = $('#dt-all').checked ? 'all' : [...$('#dt-cats').querySelectorAll('input:checked')].map((i) => i.value);
+        if (blocks !== 'all' && !blocks.length) return toast('Pick what to lock', 'bad');
+        const next = { id: w ? w.id : Math.random().toString(36).slice(2, 8), label: $('#dt-label').value, start: $('#dt-start').value, end: $('#dt-end').value, days, blocks, enabled: w ? w.enabled : true };
         const downtime = w ? r.downtime.map((x) => (x.id === w.id ? next : x)) : r.downtime.concat(next);
         saveRules(Object.assign({}, r, { downtime }), 'Downtime saved');
       };
@@ -526,6 +554,76 @@
       view.querySelectorAll('[data-range]').forEach((b) => (b.onclick = () => { reportRange = b.dataset.range; render(); }));
     }
 
+    let historyFilter = 'all';
+    const WEB_REASON = { 'blocked-site': 'Blocked site', adult: '18+', gambling: 'Gambling' };
+
+    function renderWeb() {
+      const c = child();
+      const web = c.rules.web;
+      const hist = (c.history || []).filter((h) => historyFilter === 'all' || (historyFilter === 'blocked' ? h.blocked : h.type === historyFilter));
+      const siteList = (key, empty) => `<ul class="list">${web[key].map((site) => `<li><div class="grow">${esc(site)}</div>
+          <button class="btn sm outline" data-unsite="${key}" data-site="${esc(site)}" aria-label="Remove ${esc(site)}">✕</button></li>`).join('') || `<li class="muted small">${empty}</li>`}</ul>`;
+      view.innerHTML = `
+        <section class="card">
+          <div class="row between"><h2 style="margin:0">🌐 Safe internet</h2>
+            <label class="switch"><input type="checkbox" id="web-filter" aria-label="Website filter" ${web.filter ? 'checked' : ''}><span></span></label></div>
+          <p class="muted small">Checks every website and search ${esc(c.name)} makes in IndiKids Child.</p>
+          <ul class="list">
+            <li><div class="app-icon">🔞</div><div class="grow">Block adult (18+) sites</div>
+              <label class="switch"><input type="checkbox" id="web-adult" aria-label="Block adult sites" ${web.blockAdult ? 'checked' : ''} ${web.filter ? '' : 'disabled'}><span></span></label></li>
+            <li><div class="app-icon">🎰</div><div class="grow">Block gambling &amp; betting sites</div>
+              <label class="switch"><input type="checkbox" id="web-gambling" aria-label="Block gambling sites" ${web.blockGambling ? 'checked' : ''} ${web.filter ? '' : 'disabled'}><span></span></label></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Blocked websites</h2>
+          ${siteList('blockedSites', 'None yet.')}
+          <form class="row" data-addsite="blockedSites" style="margin-top:8px"><input type="text" placeholder="e.g. example.com" aria-label="Website to block" style="margin:0"><button class="btn sm">Block</button></form>
+        </section>
+        <section class="card">
+          <h2>Always allowed websites</h2>
+          ${siteList('allowedSites', 'None yet. Sites here are never blocked.')}
+          <form class="row" data-addsite="allowedSites" style="margin-top:8px"><input type="text" placeholder="e.g. diksha.gov.in" aria-label="Website to allow" style="margin:0"><button class="btn sm">Allow</button></form>
+        </section>
+        <section class="card">
+          <h2>History <button class="btn sm outline" id="clear-history">Clear</button></h2>
+          <div class="row wrap" role="group" aria-label="Show">
+            ${[['all', 'All'], ['web', 'Browser'], ['youtube', 'YouTube'], ['blocked', 'Blocked']].map(([k, l]) =>
+              `<button class="btn sm ${historyFilter === k ? '' : 'outline'}" data-hfilter="${k}">${l}</button>`).join('')}
+          </div>
+          <ul class="list" id="history" style="margin-top:8px">
+            ${hist.map((h) => `<li><div class="app-icon">${h.type === 'youtube' ? '▶️' : '🌐'}</div>
+                <div class="grow"><div style="overflow-wrap:anywhere">${esc(h.text)}</div><div class="muted small">${h.type === 'youtube' ? 'YouTube search' : 'Browser'} · ${IK.ago(h.ts)}</div></div>
+                ${h.blocked ? `<span class="pill bad">🔒 ${WEB_REASON[h.reason] || 'Blocked'}</span>` : ''}</li>`).join('') || '<li class="muted">Nothing here yet.</li>'}
+          </ul>
+          <p class="muted small" style="margin-top:8px">History covers browsing and YouTube searches made in IndiKids Child and is kept for 30 days.</p>
+        </section>`;
+
+      const saveWeb = (patch, msg) => canEdit() ? saveRules(Object.assign({}, c.rules, { web: Object.assign({}, web, patch) }), msg) : render();
+      $('#web-filter').onchange = (e) => saveWeb({ filter: e.target.checked }, e.target.checked ? 'Website filter on' : 'Website filter off');
+      $('#web-adult').onchange = (e) => saveWeb({ blockAdult: e.target.checked }, 'Saved');
+      $('#web-gambling').onchange = (e) => saveWeb({ blockGambling: e.target.checked }, 'Saved');
+      view.querySelectorAll('[data-addsite]').forEach((f) => (f.onsubmit = (e) => {
+        e.preventDefault();
+        const key = f.dataset.addsite;
+        const site = C.cleanSite(f.querySelector('input').value);
+        if (!site) return toast('Enter a website like example.com', 'bad');
+        const other = key === 'blockedSites' ? 'allowedSites' : 'blockedSites';
+        saveWeb({ [key]: web[key].concat(site), [other]: web[other].filter((x) => x !== site) }, key === 'blockedSites' ? `${site} blocked` : `${site} always allowed`);
+      }));
+      view.querySelectorAll('[data-unsite]').forEach((b) => (b.onclick = () =>
+        saveWeb({ [b.dataset.unsite]: web[b.dataset.unsite].filter((x) => x !== b.dataset.site) }, 'Removed')));
+      view.querySelectorAll('[data-hfilter]').forEach((b) => (b.onclick = () => { historyFilter = b.dataset.hfilter; render(); }));
+      $('#clear-history').onclick = async () => {
+        if (!(await confirmBox('Clear history?', `All browser and YouTube history for ${c.name} will be deleted.`, 'Clear'))) return;
+        try {
+          await backend.clearHistory(token, c.id);
+          toast('History cleared');
+          refresh();
+        } catch (err) { toast(err.message, 'bad'); }
+      };
+    }
+
     function renderSettings() {
       const list = children();
       const daysLeft = Math.max(0, Math.ceil((fam.trialEndsAt - Date.now()) / 864e5));
@@ -554,6 +652,7 @@
           <h2>Help &amp; legal</h2>
           <ul class="list">
             <li><div class="app-icon">📄</div><a class="grow" href="${IK.link('terms.html')}">Terms of Use</a></li>
+            <li><div class="app-icon">🔐</div><a class="grow" href="${IK.link('privacy.html')}">Privacy Policy</a></li>
             <li><div class="app-icon">✉️</div><a class="grow" href="mailto:support@indikids.com">Contact support</a></li>
             <li><div class="app-icon">🚩</div><a class="grow" href="mailto:safety@indikids.com">Report child-safety misuse</a></li>
           </ul>
@@ -602,7 +701,7 @@
     // Re-render live tabs on new data; tabs with forms re-render only on user action.
     async function refresh() {
       if (!(await load())) return;
-      const editing = $('dialog[open]') || (['limits', 'schedule'].includes(tab) && view.contains(document.activeElement));
+      const editing = $('dialog[open]') || (['limits', 'schedule', 'web'].includes(tab) && view.contains(document.activeElement) && document.activeElement !== document.body);
       if (!editing) render();
     }
 

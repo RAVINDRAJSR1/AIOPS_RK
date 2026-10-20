@@ -75,11 +75,14 @@
             <label class="field">Your first name <input type="text" id="kid-name" maxlength="30" required></label>
             <label class="field">Phone name <input type="text" id="device-name" maxlength="40" placeholder="e.g. Redmi Note 13"></label>
             <div class="alert warn small">
-              <strong>What your parent will see:</strong> how long you use each app, your phone's location and battery.
+              <strong>What your parent will see:</strong> how long you use each app, your phone's location and battery, and the websites and YouTube searches you make in IndiKids.
               Your parent can set screen-time limits and downtime. Messages, photos and passwords are <strong>not</strong> shared.
             </div>
             <label class="check"><input type="checkbox" id="terms" required>
               <span>My parent installed this app and we agree to the <a href="${esc(IK.link('terms.html'))}" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <label class="check"><input type="checkbox" id="privacy" required>
+              <span>We agree to the <a href="${esc(IK.link('privacy.html'))}" target="_blank">Privacy Policy</a>.</span>
             </label>
             <button class="btn block" id="continue">Continue</button>
           </form>
@@ -93,6 +96,7 @@
             childName: $('#kid-name').value,
             deviceName: $('#device-name').value || guessDevice(),
             acceptedTerms: $('#terms').checked,
+            acceptedPrivacy: $('#privacy').checked,
           });
           token = res.token;
           IK.token.set('child', token);
@@ -217,7 +221,11 @@
           return;
         }
       }
-      if (screen === 'home' || screen === 'using') render();
+      if (screen === 'home') render();
+      else if (screen === 'using' && $('#app-left')) {
+        const st = C.appStatus(liveChild(), openApp, IK.now());
+        $('#app-left').textContent = st.remaining === Infinity ? 'No time limit for this app' : `${C.formatMin(st.remaining)} left`;
+      }
     }
 
     async function report(force) {
@@ -271,8 +279,11 @@
     // ---- Screens ----------------------------------------------------------------
     function statusBanner(c, now) {
       if (c.rules.paused) return '<div class="alert bad">⏸ Your parent paused this phone.</div>';
+      let html = '';
+      if ((c.rules.blockedCategories || []).length) html += `<div class="alert bad">🔒 Your parent blocked ${esc(c.rules.blockedCategories.join(', ').toLowerCase())} apps for now.</div>`;
       const dt = C.activeDowntime(c.rules, now);
-      if (dt) return `<div class="alert warn">🌙 <strong>${esc(dt.label)}</strong> until ${dt.end}. Only always-allowed apps work.</div>`;
+      if (dt) return html + `<div class="alert warn">🌙 <strong>${esc(dt.label)}</strong> until ${dt.end}. ${dt.blocks === 'all' ? 'Only always-allowed apps work.' : `${esc(dt.blocks.join(', '))} apps are locked.`}</div>`;
+      if (html) return html;
       if (c.rules.dailyLimitMin && C.remainingToday(c, now) <= 0) return '<div class="alert bad">⏰ Screen time for today is used up.</div>';
       return '';
     }
@@ -336,10 +347,47 @@
           <div class="app-icon">${app.icon}</div>
           <h2>Using ${esc(app.name)}</h2>
           <p class="muted" id="app-left">${st.remaining === Infinity ? 'No time limit for this app' : `${C.formatMin(st.remaining)} left`}</p>
-          <p class="muted small">In the Android app, ${esc(app.name)} opens here and IndiKids counts the time in the background.</p>
+          ${openApp === 'chrome' || openApp === 'youtube' ? webPanel(openApp) : `<p class="muted small">In the Android app, ${esc(app.name)} opens here and IndiKids counts the time in the background.</p>`}
           <button class="btn block outline" id="close-app">Close ${esc(app.name)}</button>
         </section>`;
-      $('#close-app').onclick = () => { openApp = null; screen = 'home'; report(); render(); };
+      $('#close-app').onclick = () => { openApp = null; webResult = null; screen = 'home'; report(); render(); };
+      if ($('#web-form')) $('#web-form').onsubmit = (e) => { e.preventDefault(); browse(openApp, $('#web-input').value); };
+    }
+
+    // ---- Safe browser and YouTube search ----------------------------------------
+    let webResult = null; // last result shown under the address bar
+
+    function webPanel(appId) {
+      const yt = appId === 'youtube';
+      const mine = (me.child.history || []).filter((h) => h.type === (yt ? 'youtube' : 'web')).slice(0, 4);
+      return `<form id="web-form" class="row" style="margin:12px 0">
+          <input type="text" id="web-input" style="margin:0" placeholder="${yt ? 'Search YouTube' : 'Search or type a website'}" aria-label="${yt ? 'Search YouTube' : 'Search or website'}" autocomplete="off">
+          <button class="btn sm">${yt ? 'Search' : 'Go'}</button>
+        </form>
+        ${webResult ? (webResult.blocked
+          ? `<div class="alert bad" id="web-blocked">🔒 ${esc(webResult.why)}<div class="small" style="font-weight:400;margin-top:4px">Your parent can see this was blocked.</div></div>`
+          : `<div class="alert good" id="web-ok">✔ ${IK.isDemo ? 'Demo: this would open' : 'Opened'} <strong style="overflow-wrap:anywhere">${esc(webResult.text)}</strong></div>`) : ''}
+        ${mine.length ? `<div class="muted small" style="text-align:left">Recent</div><ul class="list small" style="text-align:left">${mine.map((h) =>
+          `<li><span>${h.blocked ? '🔒' : yt ? '▶️' : '🌐'}</span><span class="grow" style="overflow-wrap:anywhere">${esc(h.text)}</span></li>`).join('')}</ul>` : ''}
+        <p class="muted small">Websites and searches are checked by IndiKids and shown to your parent.</p>`;
+    }
+
+    async function browse(appId, input) {
+      const yt = appId === 'youtube';
+      let target = C.parseAddress(input);
+      if (!target) return;
+      if (yt) target = { kind: 'search', query: target.query || input.trim(), url: 'https://www.youtube.com/results?search_query=' + encodeURIComponent(input.trim()) };
+      const check = C.checkWeb(me.child.rules, target);
+      const text = target.kind === 'site' ? target.host : target.query;
+      webResult = { blocked: !check.allowed, why: C.WEB_REASON_TEXT[check.reason] || 'Blocked', text };
+      try {
+        await backend.history(token, { type: yt ? 'youtube' : 'web', text, blocked: !check.allowed, reason: check.reason });
+        await refresh();
+      } catch (err) {
+        if (err.status === 401) return signedOut();
+      }
+      if (check.allowed && !IK.isDemo) window.open(target.url, '_blank', 'noopener');
+      render();
     }
 
     function showLock(app, st) {

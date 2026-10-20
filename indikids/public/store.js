@@ -9,6 +9,17 @@
   const PAIR_CODE_TTL = 30 * 60 * 1000;
   const MAX_EVENTS = 50;
   const KEEP_DAYS = 30;
+  const MAX_HISTORY = 200;
+  const ANSWER_KEYS = ['knowTime', 'needLock', 'irritable', 'worryAway', 'sleepStudy', 'websites'];
+
+  // Keep only known onboarding goals and yes/no answers.
+  function cleanSetup(setup) {
+    if (!setup || typeof setup !== 'object') return null;
+    const goals = Core.GOALS.map((g) => g.id).filter((id) => (setup.goals || []).includes(id));
+    const answers = {};
+    for (const k of ANSWER_KEYS) if (typeof (setup.answers || {})[k] === 'boolean') answers[k] = setup.answers[k];
+    return { goals, answers, skipped: !!setup.skipped };
+  }
 
   function fail(status, message) {
     const err = new Error(message);
@@ -91,8 +102,8 @@
     }
 
     return {
-      createFamily({ parentName, acceptedTerms }) {
-        if (!acceptedTerms) fail(400, 'Please accept the Terms of Use to continue');
+      createFamily({ parentName, acceptedTerms, acceptedPrivacy, setup }) {
+        if (!acceptedTerms || !acceptedPrivacy) fail(400, 'Please accept the Terms of Use and Privacy Policy to continue');
         return tx((s) => {
           const familyId = randomHex(6);
           const token = randomHex(16);
@@ -101,6 +112,7 @@
             parentName: text(parentName, 40, 'Parent'),
             createdAt: now(),
             termsAcceptedAt: now(),
+            setup: cleanSetup(setup),
             plan: 'trial',
             trialEndsAt: now() + Core.TRIAL_DAYS * 864e5,
             children: {},
@@ -129,8 +141,8 @@
         });
       },
 
-      pair({ code, childName, deviceName, acceptedTerms }) {
-        if (!acceptedTerms) fail(400, 'Please accept the Terms of Use to continue');
+      pair({ code, childName, deviceName, acceptedTerms, acceptedPrivacy }) {
+        if (!acceptedTerms || !acceptedPrivacy) fail(400, 'Please accept the Terms of Use and Privacy Policy to continue');
         return tx((s) => {
           const entry = s.codes[String(code || '').trim()];
           if (!entry || entry.expiresAt < now() || !s.families[entry.familyId]) {
@@ -150,9 +162,10 @@
             currentApp: null,
             location: null,
             permissions: { location: false, usage: false, accessibility: false },
-            rules: Core.defaultRules(),
+            rules: Core.defaultRules(family.setup && !family.setup.skipped ? family.setup : null),
             usage: {},
             requests: [],
+            history: [],
           };
           s.tokens[token] = { role: 'child', familyId: family.id, childId };
           addEvent(family, { type: 'paired', childId, text: `${family.children[childId].name}'s device is connected` });
@@ -282,6 +295,32 @@
           const what = req.appId ? ` for ${Core.APP_BY_ID[req.appId].name}` : '';
           addEvent(family, { type: 'request', childId: child.id, text: `${child.name} asked for ${req.minutes} more minutes${what}` });
           return req;
+        });
+      },
+
+      // A website visit or YouTube search made on the child device.
+      childHistory(token, { type, text, blocked, reason }) {
+        return tx((s) => {
+          const { child } = auth(s, token, 'child');
+          const entry = {
+            ts: now(),
+            type: type === 'youtube' ? 'youtube' : 'web',
+            text: String(text || '').trim().slice(0, 200),
+            blocked: !!blocked,
+            reason: blocked ? String(reason || '').slice(0, 20) : '',
+          };
+          if (!entry.text) fail(400, 'Nothing to record');
+          child.history = child.history || [];
+          child.history.unshift(entry);
+          const cutoff = now() - KEEP_DAYS * 864e5;
+          child.history = child.history.filter((h) => h.ts >= cutoff).slice(0, MAX_HISTORY);
+          return entry;
+        });
+      },
+
+      clearHistory(token, childId) {
+        return tx((s) => {
+          getChild(auth(s, token, 'parent').family, childId).history = [];
         });
       },
 

@@ -110,18 +110,41 @@ async function tab(page, name) {
     await child.waitForFunction(() => !/paused this phone/.test(document.body.innerText), null, { timeout: 8000 });
     check(true, 'resume unlocks phone');
 
-    // Downtime via the demo clock.
+    // One button: block games & videos.
+    await tab(parent, 'home');
+    await parent.click('#fun-btn');
+    await child.waitForFunction(() => document.querySelector('[data-app="youtube"]').classList.contains('locked'), null, { timeout: 8000 });
+    check(/blocked games, entertainment, social apps/.test(await child.textContent('body')), 'one-button block: child sees banner');
+    check(!(await child.locator('[data-app="whatsapp"]').getAttribute('class')).includes('locked'), 'one-button block leaves WhatsApp open');
+    await shot(parent, 'parent-block-button');
+    await shot(child, 'child-games-blocked');
+    await parent.click('#fun-btn');
+    await child.waitForFunction(() => !document.querySelector('[data-app="youtube"]').classList.contains('locked'), null, { timeout: 8000 });
+    check(true, 'unblock restores games & videos');
+
+    // School downtime (weekdays 09:00-15:00) locks only games and entertainment.
+    if ([1, 2, 3, 4, 5].includes(new Date().getDay())) {
+      await parent.evaluate(() => IK.setDemoHour(10));
+      await child.reload();
+      await child.waitForFunction(() => /School/.test(document.body.innerText), null, { timeout: 8000 });
+      const cls = async (id) => child.locator(`[data-app="${id}"]`).getAttribute('class');
+      check((await cls('freefire')).includes('locked') && !(await cls('whatsapp')).includes('locked'), 'school time: games locked, WhatsApp open');
+      await shot(child, 'child-school');
+    }
+
+    // Sleep downtime via the demo clock.
     await parent.evaluate(() => IK.setDemoHour(22));
     await child.reload();
-    await child.waitForFunction(() => /Bedtime/.test(document.body.innerText), null, { timeout: 8000 });
-    check(true, 'bedtime downtime shows on child at 22:00');
-    await shot(child, 'child-bedtime');
+    await child.waitForFunction(() => /Sleep<\/strong> until/.test(document.body.innerHTML), null, { timeout: 8000 });
+    check((await child.locator('.tile:not(.locked)').count()) === 5, 'sleep downtime at 22:00 locks all but essential apps');
+    await shot(child, 'child-sleep');
     await parent.reload();
     await tab(parent, 'schedule');
-    check(/Bedtime<\/strong> is on right now/.test(await parent.innerHTML('#view')), 'parent sees bedtime is on');
-    await parent.click('[data-toggle="bed"]', { force: true });
-    await child.waitForFunction(() => !/Bedtime/.test(document.body.innerText), null, { timeout: 8000 });
-    check(true, 'turning bedtime off unlocks child');
+    check(/Sleep<\/strong> is on right now/.test(await parent.innerHTML('#view')), 'parent sees sleep is on');
+    await shot(parent, 'parent-downtime');
+    await parent.click('[data-toggle="sleep"]', { force: true });
+    await child.waitForFunction(() => !/Sleep<\/strong> until/.test(document.body.innerHTML), null, { timeout: 8000 });
+    check(true, 'turning sleep off unlocks child');
     await parent.click('#add-dt');
     await parent.fill('#dt-label', 'Dinner');
     await parent.fill('#dt-start', '21:00');
@@ -129,10 +152,43 @@ async function tab(page, name) {
     await parent.click('#dt-save');
     await child.waitForFunction(() => /Dinner/.test(document.body.innerText), null, { timeout: 8000 });
     check(true, 'new downtime from parent applies on child');
-    await shot(parent, 'parent-downtime');
     await parent.evaluate(() => IK.setDemoHour(16));
     await child.reload();
     await child.locator('#launcher').waitFor();
+
+    // Safe internet: browser + YouTube, history on the parent side.
+    await child.click('[data-app="chrome"]');
+    await child.fill('#web-input', 'online-casino-bonus.net');
+    await child.click('#web-form button');
+    await child.locator('#web-blocked').waitFor();
+    check(/gambling/.test(await child.textContent('#web-blocked')), 'gambling site blocked in browser');
+    await child.fill('#web-input', 'en.wikipedia.org/wiki/Tiger');
+    await child.click('#web-form button');
+    await child.locator('#web-ok').waitFor();
+    check(true, 'normal site allowed');
+    await shot(child, 'child-browser');
+    await child.click('#close-app');
+    await child.click('[data-app="youtube"]');
+    await child.fill('#web-input', 'volcano experiment for kids');
+    await child.click('#web-form button');
+    await child.locator('#web-ok').waitFor();
+    await child.click('#close-app');
+    await tab(parent, 'web');
+    await parent.waitForFunction(() => /volcano experiment/.test(document.getElementById('history').innerText), null, { timeout: 8000 });
+    check(/online-casino-bonus\.net[\s\S]*Gambling/.test(await parent.textContent('#history')), 'parent history shows blocked gambling visit');
+    await shot(parent, 'parent-internet');
+    await parent.fill('[data-addsite="blockedSites"] input', 'wikipedia.org');
+    await parent.click('[data-addsite="blockedSites"] button');
+    await parent.waitForFunction(() => /wikipedia\.org/.test(document.body.innerText));
+    await child.waitForTimeout(2500);
+    await child.click('[data-app="chrome"]');
+    await child.fill('#web-input', 'en.wikipedia.org');
+    await child.click('#web-form button');
+    await child.locator('#web-blocked').waitFor();
+    check(/blocked this website/.test(await child.textContent('#web-blocked')), 'parent-blocked website is blocked on child');
+    await child.click('#close-app');
+    await parent.click('[data-hfilter="blocked"]');
+    check((await parent.locator('#history li').count()) >= 3, 'history filter "Blocked" works');
 
     // SOS + location + reports.
     await child.click('#sos');
@@ -174,12 +230,14 @@ async function tab(page, name) {
     await child.fill('#code', '000000');
     await child.fill('#kid-name', 'Diya');
     await child.check('#terms');
+    await child.check('#privacy');
     await child.click('#continue');
     await child.locator('.alert.bad').waitFor();
     check(true, 'wrong pairing code rejected');
     await child.fill('#code', code);
     await child.fill('#kid-name', 'Diya');
     await child.check('#terms');
+    await child.check('#privacy');
     await shot(child, 'child-pairing');
     await child.click('#continue');
     await child.locator('[data-perm="location"]').waitFor();
@@ -203,11 +261,40 @@ async function tab(page, name) {
     watch(lp, 'live parent');
     watch(lc, 'live child');
     await lp.goto(base + '/');
-    await lp.click('#parent-btn');
-    await lp.fill('#parent-name', 'Ravi');
-    await lp.click('#get-started');
-    check((await lp.evaluate(() => document.getElementById('terms').validity.valueMissing)), 'Get Started requires Terms checkbox');
+    await shot(lp, 'onboarding-welcome');
+    check(await lp.locator('#start').isDisabled(), 'Start disabled until Terms and Privacy are accepted');
     await lp.check('#terms');
+    check(await lp.locator('#start').isDisabled(), 'Terms alone is not enough');
+    await lp.check('#privacy');
+    await lp.click('#start');
+    await shot(lp, 'onboarding-who');
+    await lp.click('#next');
+    check(await lp.locator('#next').isDisabled(), 'goals: Continue disabled until one is picked');
+    await lp.click('[data-goal="sleep"]');
+    await lp.click('[data-goal="location"]');
+    await lp.click('[data-goal="threats"]');
+    await shot(lp, 'onboarding-goals');
+    await lp.click('#next');
+    check(/Keep the phone away at bedtime/.test(await lp.textContent('body')), 'benefits match chosen goals');
+    await shot(lp, 'onboarding-benefits');
+    let guard = 0;
+    const shotKinds = new Set();
+    while (!(await lp.locator('#signup-form').count()) && guard++ < 20) {
+      if (await lp.locator('[data-answer]').count()) {
+        check(await lp.locator('#next').isDisabled(), `question ${guard}: Continue waits for an answer`);
+        await lp.click('[data-answer="yes"]');
+        if (!shotKinds.has('q')) { shotKinds.add('q'); await shot(lp, 'onboarding-question'); }
+      } else if (await lp.locator('.mock-phone, .ob-cards, .mock-map').count()) {
+        const title = await lp.textContent('.ob-title');
+        if (shotKinds.size < 6) { shotKinds.add(title); await shot(lp, 'onboarding-info'); }
+      }
+      await lp.click('#next');
+    }
+    check(await lp.locator('#signup-form').count(), 'reached sign-up after all questions');
+    const plan = await lp.textContent('.ob-benefits');
+    check(/Sleep downtime/.test(plan) && /School downtime/.test(plan), 'plan summary reflects answers (sleep/study = yes)');
+    await shot(lp, 'onboarding-signup');
+    await lp.fill('#parent-name', 'Ravi');
     await lp.click('#get-started');
     await lp.waitForURL(/parent\.html/);
     await lp.click('#pair-btn');
@@ -216,6 +303,7 @@ async function tab(page, name) {
     await lc.fill('#code', liveCode);
     await lc.fill('#kid-name', 'Meera');
     await lc.check('#terms');
+    await lc.check('#privacy');
     await lc.click('#continue');
     await lc.click('[data-perm="location"]');
     await lc.waitForFunction(() => !document.querySelector('[data-perm="location"]'));
@@ -225,6 +313,8 @@ async function tab(page, name) {
     await lc.locator('#launcher').waitFor();
     await lp.waitForFunction(() => /Meera/.test(document.body.innerText), null, { timeout: 10000 });
     check(true, 'live: child pairs from a separate browser');
+    const liveRules = await lc.evaluate(() => fetch('/api/me', { headers: { Authorization: 'Bearer ' + IK.token.get('child') } }).then((r) => r.json()));
+    check(liveRules.child.rules.downtime.every((w) => w.enabled), 'live: child starts with downtime from onboarding answers');
     await lp.reload();
     await lp.locator('.tabs button[data-tab="location"]').click();
     await lp.locator('#map').waitFor({ timeout: 15000 });
@@ -242,6 +332,18 @@ async function tab(page, name) {
     await lp.click('#confirm-yes');
     await lp.waitForURL(/index\.html/);
     check(true, 'live: close account returns to start');
+
+    // "Kid" on the who-is-this screen goes to the child app.
+    const kp = await (await browser.newContext(phone)).newPage();
+    watch(kp, 'kid onboarding');
+    await kp.goto(base + '/');
+    await kp.check('#terms');
+    await kp.check('#privacy');
+    await kp.click('#start');
+    await kp.click('[data-who="kid"]');
+    await kp.click('#next');
+    await kp.waitForURL(/child\.html/);
+    check(true, '"Kid" choice opens IndiKids Child');
 
     check(errors.length === 0, 'no JavaScript errors in any page' + (errors.length ? ':\n' + errors.join('\n') : ''));
     console.log('\nALL CHECKS PASSED');

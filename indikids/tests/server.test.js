@@ -21,11 +21,11 @@ test('live API end to end', async (t) => {
     return { status: res.status, data: await res.json() };
   };
 
-  const fam = await call('POST', '/api/family', null, { parentName: 'Priya', acceptedTerms: true });
+  const fam = await call('POST', '/api/family', null, { parentName: 'Priya', acceptedTerms: true, acceptedPrivacy: true });
   assert.equal(fam.status, 200);
   const p = fam.data.token;
   const { data: pc } = await call('POST', '/api/family/pair-code', p, {});
-  const kid = await call('POST', '/api/pair', null, { code: pc.code, childName: 'Aarav', acceptedTerms: true });
+  const kid = await call('POST', '/api/pair', null, { code: pc.code, childName: 'Aarav', acceptedTerms: true, acceptedPrivacy: true });
   assert.equal(kid.status, 200);
   const c = kid.data.token;
   const id = kid.data.childId;

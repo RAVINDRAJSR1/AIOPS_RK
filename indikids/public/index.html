@@ -9,78 +9,265 @@
   <link rel="stylesheet" href="app.css">
   <link rel="icon" href="icon.svg">
 </head>
-<body>
-  <main class="app">
-    <section class="hero">
-      <div class="logo" aria-hidden="true">🛡️</div>
-      <h1>IndiKids</h1>
-      <p class="muted">Peace of mind about your child's screen time and safety.</p>
-    </section>
-
-    <section class="card stack" id="features">
-      <div class="feature"><div class="app-icon">⏳</div><div><h3>Screen Time Limits</h3><p class="muted small">Daily limits that lock non-essential apps once reached.</p></div></div>
-      <div class="feature"><div class="app-icon">🌙</div><div><h3>Scheduled Downtime</h3><p class="muted small">Bedtime and study hours when selected apps are blocked.</p></div></div>
-      <div class="feature"><div class="app-icon">📍</div><div><h3>Real-Time Location</h3><p class="muted small">See where your child's phone is on a map.</p></div></div>
-      <div class="feature"><div class="app-icon">📊</div><div><h3>App Usage Reports</h3><p class="muted small">Time spent in each app, today and this week.</p></div></div>
-    </section>
-
-    <section class="card" id="start">
-      <h2>Who is using this phone?</h2>
-      <div class="stack">
-        <button class="btn block" id="parent-btn">👩 I'm a Parent – set up IndiKids</button>
-        <a class="btn block ghost" id="child-btn" href="child.html">🧒 This is my child's phone – IndiKids Child</a>
-        <a class="btn block accent" href="demo.html">▶ Try the demo (no sign-up)</a>
-      </div>
-    </section>
-
-    <section class="card hidden" id="signup">
-      <h2>Create your parent account</h2>
-      <form id="signup-form">
-        <label class="field">Your name
-          <input type="text" id="parent-name" maxlength="40" autocomplete="given-name" required>
-        </label>
-        <label class="check"><input type="checkbox" id="terms" required>
-          <span>I am of legal age and I agree to the <a href="terms.html" target="_blank">Terms of Use</a>.</span>
-        </label>
-        <button class="btn block" id="get-started" type="submit">Get Started</button>
-        <p class="muted small" style="margin-top:10px">Includes a free trial. No payment is taken in this version.</p>
-      </form>
-    </section>
-
-    <p class="muted small" style="text-align:center">
-      <a href="terms.html">Terms of Use</a> · © IndiKids Technologies Pvt. Ltd.
-    </p>
-  </main>
+<body class="onboarding">
+  <main class="ob" id="ob" aria-live="polite"></main>
 
   <script src="core.js"></script>
   <script src="store.js"></script>
   <script src="api.js"></script>
   <script>
+  (function () {
+    'use strict';
+    const C = IKCore;
+    const { esc } = IK;
+    const root = document.getElementById('ob');
+
     IK.demoBadge();
-    document.getElementById('child-btn').href = IK.link('child.html');
     if (IK.token.get('parent')) {
       IK.backend.family(IK.token.get('parent')).then(() => location.replace(IK.link('parent.html'))).catch(() => IK.token.set('parent', null));
     }
-    document.getElementById('parent-btn').onclick = () => {
-      document.getElementById('signup').classList.remove('hidden');
-      document.getElementById('parent-name').focus();
+
+    // ---- Illustrations (plain HTML mock-ups, no image files) -------------------
+    const art = {
+      welcome: `<div class="ob-art big-emoji" aria-hidden="true">👨🧒👩</div>`,
+      block: `<div class="mock-phone" aria-hidden="true">
+          <div class="mock-brand">🛡️ IndiKids</div>
+          ${[['🎮', 'BGMI', 70], ['🎬', 'YouTube', 55], ['📸', 'Instagram', 40]].map(([i, n, w]) => `
+            <div class="mock-bar"><span>${i}</span><i style="width:${w}%"></i><b>🔒</b></div>`).join('')}
+          <div class="mock-lock">🔒 Block games &amp; videos</div>
+        </div>`,
+      calm: `<div class="ob-cards" aria-hidden="true">
+          <div class="ob-card"><div class="small muted">Request from Aarav</div><strong>⏰ 15 more minutes for YouTube?</strong>
+            <div class="small muted">“Need to finish my science video”</div>
+            <div class="row" style="margin-top:8px"><span class="pill good">Approve</span><span class="pill">Decline</span></div></div>
+          <div class="ob-card right"><strong>🕒 1h 20m left today</strong><div class="small muted">Your child always sees how much time is left — no surprises.</div></div>
+        </div>`,
+      location: `<div class="mock-map" aria-hidden="true"><div class="road r1"></div><div class="road r2"></div><div class="road r3"></div><div class="park"></div><div class="pin">🧒</div></div>`,
+      downtime: `<div class="ob-cards" aria-hidden="true">
+          <div class="ob-card"><div class="row between"><strong style="font-size:1.3rem">📚 School</strong><span class="mini-switch on"></span></div>
+            <div>09:00 – 15:00</div><div class="chip">🔒 Games and entertainment</div></div>
+          <div class="ob-card right"><div class="row between"><strong style="font-size:1.3rem">🛏️ Sleep</strong><span class="mini-switch on"></span></div>
+            <div>22:00 – 07:00</div><div class="chip">🔒 All apps</div></div>
+        </div>`,
+      internet: `<div class="ob-cards" aria-hidden="true">
+          <div class="ob-card"><div class="row between"><strong style="font-size:1.3rem">🌐 Internet</strong><span class="mini-switch on"></span></div>
+            <div class="chip"><span style="color:var(--bad)">🔒</span> xxx-films.com</div>
+            <div class="chip"><span style="color:var(--good)">✔</span> education.com</div>
+            <div class="chip"><span style="color:var(--bad)">🔒</span> gambling.com</div></div>
+        </div>`,
     };
-    document.getElementById('signup-form').onsubmit = async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('get-started');
-      btn.disabled = true;
-      try {
-        const res = await IK.backend.createFamily({
-          parentName: document.getElementById('parent-name').value,
-          acceptedTerms: document.getElementById('terms').checked,
-        });
-        IK.token.set('parent', res.token);
-        location.href = IK.link('parent.html');
-      } catch (err) {
-        IK.toast(err.message, 'bad');
-        btn.disabled = false;
+
+    // ---- Screens ------------------------------------------------------------------
+    // kind: welcome | who | goals | benefits | question | info | signup
+    const SCREENS = [
+      { kind: 'welcome' },
+      { kind: 'who' },
+      { kind: 'goals' },
+      { kind: 'benefits' },
+      { kind: 'question', key: 'knowTime', title: 'Do you know how much time your kid spends on the phone?' },
+      { kind: 'question', key: 'needLock', title: "Do you ever find situations where you need to lock your kid's phone?" },
+      { kind: 'info', art: 'block', title: 'Block games and videos with just one button', text: 'So your kid can focus on school or take a break' },
+      { kind: 'question', key: 'irritable', title: 'Does your kid show signs of irritability or aggression?', text: 'When using the phone or when it’s time for a break from gadgets' },
+      { kind: 'info', art: 'calm', title: 'Clear rules instead of arguments', text: 'When time is up, your kid can ask for more from their phone. You answer with one tap.' },
+      { kind: 'question', key: 'worryAway', title: 'Do you worry when your kid isn’t with you?', text: 'For example, when walking alone or going to school' },
+      { kind: 'question', key: 'sleepStudy', title: 'Are you worried that your kid is using the phone during sleep or study time?' },
+      { kind: 'info', art: 'location', title: 'With IndiKids you always know where your kid is', text: 'See their phone on the map and get an alert if they press SOS' },
+      { kind: 'info', art: 'downtime', title: 'Block the phone during study and sleep time', text: 'To help your kid focus more on schoolwork and avoid playing on the phone before bed' },
+      { kind: 'question', key: 'websites', title: 'Do you worry about the websites your kid visits?' },
+      { kind: 'info', art: 'internet', title: 'Keep track of online safety', text: "Block adult and gambling sites, and check your kid's browser and YouTube history" },
+      { kind: 'signup' },
+    ];
+    const FIRST_STEP = 2; // progress bar starts at the goals screen
+    const LAST_STEP = SCREENS.length - 1;
+
+    const state = { i: 0, terms: false, privacy: false, who: 'parent', goals: [], answers: {}, skipped: false };
+    try {
+      Object.assign(state, JSON.parse(sessionStorage.getItem('ik-onboarding') || '{}'));
+    } catch { /* fresh start */ }
+    const saveState = () => { try { sessionStorage.setItem('ik-onboarding', JSON.stringify(state)); } catch { /* ignore */ } };
+
+    function go(i) {
+      state.i = Math.max(0, Math.min(LAST_STEP, i));
+      saveState();
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    function progress() {
+      if (state.i < FIRST_STEP || state.i === LAST_STEP) return '';
+      const pct = Math.round(((state.i - FIRST_STEP + 1) / (LAST_STEP - FIRST_STEP + 1)) * 100);
+      return `<div class="ob-top">
+          <button class="ob-back" id="back" aria-label="Back">‹</button>
+          <div class="ob-progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+          <button class="ob-skip" id="skip">Skip</button>
+        </div>`;
+    }
+
+    function footer(label, enabled, id) {
+      return `<div class="ob-foot"><button class="btn block ob-btn" id="${id || 'next'}" ${enabled ? '' : 'disabled'}>${label}</button></div>`;
+    }
+
+    function render() {
+      const s = SCREENS[state.i];
+      let html = '';
+      if (s.kind === 'welcome') {
+        html = `<section class="ob-screen ob-hero">
+            <div class="ob-watermark" aria-hidden="true">IndiKids</div>
+            ${art.welcome}
+            <h1>IndiKids</h1>
+            <p class="ob-lead">Screen time limits, safe internet and location — for calmer days and safer kids.</p>
+            <div class="ob-checks">
+              <label class="check"><input type="checkbox" id="terms" ${state.terms ? 'checked' : ''}><span>I agree to the <a href="${esc(IK.link('terms.html'))}" target="_blank">Terms of Use</a></span></label>
+              <label class="check"><input type="checkbox" id="privacy" ${state.privacy ? 'checked' : ''}><span>I agree to the <a href="${esc(IK.link('privacy.html'))}" target="_blank">Privacy Policy</a></span></label>
+            </div>
+            <a class="ob-demo" href="demo.html">▶ Just looking? Try the demo</a>
+          </section>
+          ${footer('Start', state.terms && state.privacy, 'start')}`;
+      } else if (s.kind === 'who') {
+        const card = (id, title, text, pic) => `
+          <button class="ob-who ${state.who === id ? 'on' : ''}" data-who="${id}" aria-pressed="${state.who === id}">
+            <span class="ob-radio" aria-hidden="true"></span>
+            <strong>${title}</strong><span>${text}</span>
+            ${state.who === id ? `<span class="ob-who-pic" aria-hidden="true">${pic}</span>` : ''}
+          </button>`;
+        html = `<section class="ob-screen">
+            <h1 class="ob-title" style="text-align:left">Who's going to use this device?</h1>
+            ${card('parent', 'Parent', 'This is my phone', '👩‍🦱👨')}
+            ${card('kid', 'Kid', "This is my kid's phone", '🧒')}
+          </section>
+          ${footer('Continue', true)}`;
+      } else if (s.kind === 'goals') {
+        html = `${progress()}<section class="ob-screen">
+            <h1 class="ob-title">What do you want to use IndiKids for?</h1>
+            <p class="ob-sub">Choose everything that matters to you</p>
+            <div class="ob-goals">
+              ${C.GOALS.map((g) => `<button class="ob-goal ${state.goals.includes(g.id) ? 'on' : ''}" data-goal="${g.id}" aria-pressed="${state.goals.includes(g.id)}">
+                  <span class="ob-tick" aria-hidden="true"></span><span class="ob-goal-icon" aria-hidden="true">${g.icon}</span><span>${esc(g.label)}</span></button>`).join('')}
+            </div>
+          </section>
+          ${footer('Continue', state.goals.length > 0)}`;
+      } else if (s.kind === 'benefits') {
+        const list = C.GOALS.filter((g) => state.goals.includes(g.id));
+        html = `${progress()}<section class="ob-screen">
+            <div class="ob-art" aria-hidden="true"><div class="ob-art-ring">👩 📱 🧒</div></div>
+            <h1 class="ob-title">Awesome! With IndiKids, you’ll be able to:</h1>
+            <ul class="ob-benefits">${list.map((g) => `<li><span class="ob-check" aria-hidden="true">✓</span>${esc(g.benefit)}</li>`).join('')}</ul>
+          </section>
+          ${footer('Continue', true)}`;
+      } else if (s.kind === 'question') {
+        const a = state.answers[s.key];
+        html = `${progress()}<section class="ob-screen">
+            <h1 class="ob-title">${esc(s.title)}</h1>
+            ${s.text ? `<p class="ob-sub">${esc(s.text)}</p>` : ''}
+            <div class="ob-answers" role="radiogroup" aria-label="${esc(s.title)}">
+              <button class="ob-answer ${a === true ? 'on' : ''}" role="radio" aria-checked="${a === true}" data-answer="yes">Yes</button>
+              <button class="ob-answer ${a === false ? 'on' : ''}" role="radio" aria-checked="${a === false}" data-answer="no">No</button>
+            </div>
+          </section>
+          ${footer('Continue', typeof a === 'boolean')}`;
+      } else if (s.kind === 'info') {
+        html = `${progress()}<section class="ob-screen">
+            <div class="ob-art">${art[s.art]}</div>
+            <h1 class="ob-title">${esc(s.title)}</h1>
+            <p class="ob-sub">${esc(s.text)}</p>
+          </section>
+          ${footer('Continue', true)}`;
+      } else if (s.kind === 'signup') {
+        const plan = planSummary();
+        html = `<section class="ob-screen">
+            <h1 class="ob-title">Your plan is ready</h1>
+            <p class="ob-sub">These start switched on for each child you add. You can change them any time.</p>
+            <ul class="ob-benefits">${plan.map((p) => `<li><span class="ob-check" aria-hidden="true">✓</span>${p}</li>`).join('')}</ul>
+            <form id="signup-form" class="card" style="margin-top:16px">
+              <label class="field">Your name
+                <input type="text" id="parent-name" maxlength="40" autocomplete="given-name" required>
+              </label>
+              <p class="muted small">By tapping Get Started you confirm you are of legal age and accept the Terms of Use and Privacy Policy. Includes a ${C.TRIAL_DAYS}-day free trial.</p>
+              <button class="btn block ob-btn" id="get-started" type="submit">Get Started</button>
+            </form>
+          </section>`;
       }
-    };
+      root.innerHTML = html;
+      bind(s);
+    }
+
+    // What will be switched on for the first child, from the answers given.
+    function planSummary() {
+      const rules = C.defaultRules(state.goals.length ? { goals: state.goals, answers: state.answers } : null);
+      const out = [`Daily screen time limit of ${C.formatMin(rules.dailyLimitMin)}`];
+      for (const w of rules.downtime) {
+        if (w.enabled) out.push(`${esc(w.label)} downtime ${w.start}–${w.end} (${w.blocks === 'all' ? 'all apps' : 'games and entertainment'})`);
+      }
+      out.push('Adult and gambling websites blocked');
+      out.push('Location and SOS alerts');
+      return out;
+    }
+
+    function bind(s) {
+      const $ = (q) => root.querySelector(q);
+      const next = $('#next');
+      if (next) next.onclick = () => {
+        if (s.kind === 'who' && state.who === 'kid') {
+          saveState();
+          location.href = IK.link('child.html');
+          return;
+        }
+        go(state.i + 1);
+      };
+      if ($('#back')) $('#back').onclick = () => go(state.i - 1);
+      if ($('#skip')) $('#skip').onclick = () => { state.skipped = true; go(LAST_STEP); };
+
+      if (s.kind === 'welcome') {
+        const upd = () => {
+          state.terms = $('#terms').checked;
+          state.privacy = $('#privacy').checked;
+          $('#start').disabled = !(state.terms && state.privacy);
+          saveState();
+        };
+        $('#terms').onchange = upd;
+        $('#privacy').onchange = upd;
+        $('#start').onclick = () => go(1);
+      }
+      root.querySelectorAll('[data-who]').forEach((b) => (b.onclick = () => { state.who = b.dataset.who; render(); }));
+      root.querySelectorAll('[data-goal]').forEach((b) => (b.onclick = () => {
+        const id = b.dataset.goal;
+        state.goals = state.goals.includes(id) ? state.goals.filter((g) => g !== id) : state.goals.concat(id);
+        saveState();
+        render();
+      }));
+      root.querySelectorAll('[data-answer]').forEach((b) => (b.onclick = () => {
+        state.answers[s.key] = b.dataset.answer === 'yes';
+        saveState();
+        render();
+      }));
+      if (s.kind === 'signup') {
+        $('#parent-name').focus();
+        $('#signup-form').onsubmit = async (e) => {
+          e.preventDefault();
+          const btn = $('#get-started');
+          btn.disabled = true;
+          try {
+            const res = await IK.backend.createFamily({
+              parentName: $('#parent-name').value,
+              acceptedTerms: state.terms,
+              acceptedPrivacy: state.privacy,
+              setup: { goals: state.goals, answers: state.answers, skipped: !state.goals.length },
+            });
+            IK.token.set('parent', res.token);
+            try { sessionStorage.removeItem('ik-onboarding'); } catch { /* ignore */ }
+            location.href = IK.link('parent.html');
+          } catch (err) {
+            IK.toast(err.message, 'bad');
+            btn.disabled = false;
+          }
+        };
+      }
+    }
+
+    // Accepting the Terms and Privacy Policy is required before anything else.
+    if (state.i > 0 && !(state.terms && state.privacy)) state.i = 0;
+    render();
+  })();
   </script>
 </body>
 </html>

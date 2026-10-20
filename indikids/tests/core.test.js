@@ -83,3 +83,66 @@ test('formatMin', () => {
   assert.equal(C.formatMin(95), '1h 35m');
   assert.equal(C.formatMin(Infinity), 'No limit');
 });
+
+test('one-button block locks games, videos and social only', () => {
+  const c = kid({ blockedCategories: C.FUN_CATEGORIES });
+  const now = at(`${DAY}T12:00`);
+  assert.equal(C.appStatus(c, 'youtube', now).reason, 'category');
+  assert.equal(C.appStatus(c, 'bgmi', now).reason, 'category');
+  assert.equal(C.appStatus(c, 'instagram', now).reason, 'category');
+  assert.equal(C.appStatus(c, 'whatsapp', now).allowed, true);
+  assert.equal(C.appStatus(c, 'phone', now).allowed, true);
+});
+
+test('downtime can lock only some kinds of apps', () => {
+  const c = kid({ downtime: [{ id: 'school', label: 'School', start: '09:00', end: '15:00', days: [2], blocks: ['Games', 'Entertainment'], enabled: true }] });
+  const now = at(`${DAY}T10:00`);
+  assert.equal(C.appStatus(c, 'bgmi', now).reason, 'downtime');
+  assert.equal(C.appStatus(c, 'youtube', now).reason, 'downtime');
+  assert.equal(C.appStatus(c, 'whatsapp', now).allowed, true);
+  assert.equal(C.activeDowntime(c.rules, now).id, 'school', 'banner still shows the window');
+});
+
+test('starting rules follow onboarding answers', () => {
+  const none = C.defaultRules({ goals: ['location'], answers: { sleepStudy: false } });
+  assert.deepEqual(none.downtime.map((w) => w.enabled), [false, false]);
+  const sleep = C.defaultRules({ goals: ['sleep'], answers: {} });
+  assert.deepEqual(sleep.downtime.map((w) => [w.id, w.enabled]), [['school', false], ['sleep', true]]);
+  const yes = C.defaultRules({ goals: [], answers: { sleepStudy: true } });
+  assert.deepEqual(yes.downtime.map((w) => w.enabled), [true, true]);
+  const skipped = C.defaultRules(null);
+  assert.deepEqual(skipped.downtime.map((w) => w.enabled), [true, true]);
+  assert.equal(skipped.downtime[1].blocks, 'all');
+  assert.deepEqual(skipped.downtime[0].blocks, ['Games', 'Entertainment', 'Social']);
+});
+
+test('website filter', () => {
+  const rules = C.defaultRules();
+  assert.equal(C.checkWeb(rules, 'en.wikipedia.org').allowed, true);
+  assert.equal(C.checkWeb(rules, 'how to draw a tiger').allowed, true);
+  assert.equal(C.checkWeb(rules, 'xxx-films.com').reason, 'adult');
+  assert.equal(C.checkWeb(rules, 'https://www.gambling.com/offers').reason, 'gambling');
+  assert.equal(C.checkWeb(rules, 'online rummy cash').reason, 'gambling');
+  rules.web.blockedSites = ['instagram.com'];
+  assert.equal(C.checkWeb(rules, 'm.instagram.com').reason, 'blocked-site');
+  assert.equal(C.checkWeb(rules, 'notinstagram.com').allowed, true);
+  rules.web.allowedSites = ['sexeducation.example.org'];
+  assert.equal(C.checkWeb(rules, 'sexeducation.example.org').allowed, true, 'allow list wins');
+  rules.web.filter = false;
+  assert.equal(C.checkWeb(rules, 'casino.com').allowed, true);
+  assert.equal(C.checkWeb(rules, 'instagram.com').allowed, false, 'blocked sites apply even with the filter off');
+});
+
+test('sanitizeRules keeps categories, downtime blocks and web settings', () => {
+  const r = C.sanitizeRules({
+    blockedCategories: ['Games', 'Nope'],
+    downtime: [{ start: '09:00', end: '15:00', days: [1], blocks: ['Games', 'Bad'] }, { start: '22:00', end: '07:00', days: [1], blocks: 'all' }],
+    web: { filter: true, blockAdult: false, blockedSites: ['https://www.Example.com/x', 'not a site'], allowedSites: [] },
+  });
+  assert.deepEqual(r.blockedCategories, ['Games']);
+  assert.deepEqual(r.downtime[0].blocks, ['Games']);
+  assert.equal(r.downtime[1].blocks, 'all');
+  assert.equal(r.web.blockAdult, false);
+  assert.equal(r.web.blockGambling, true);
+  assert.deepEqual(r.web.blockedSites, ['example.com']);
+});

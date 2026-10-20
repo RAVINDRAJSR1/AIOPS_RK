@@ -96,6 +96,7 @@ const routes = [
   ['PUT', /^\/api\/children\/(\w+)\/rules$/, (t, b, p) => store.updateRules(t, p[1], b)],
   ['POST', /^\/api\/children\/(\w+)\/bonus$/, (t, b, p) => store.addBonus(t, p[1], b.minutes, b.day)],
   ['POST', /^\/api\/children\/(\w+)\/requests\/(\w+)$/, (t, b, p) => store.resolveRequest(t, p[1], p[2], b.approve, b.minutes)],
+  ['DELETE', /^\/api\/children\/(\w+)\/history$/, (t, b, p) => store.clearHistory(t, p[1])],
   ['DELETE', /^\/api\/children\/(\w+)$/, (t, b, p) => store.removeChild(t, p[1])],
   [
     'POST',
@@ -110,6 +111,7 @@ const routes = [
   ['GET', /^\/api\/me$/, (t) => store.childView(t)],
   ['POST', /^\/api\/me\/report$/, (t, b) => store.childReport(t, b)],
   ['POST', /^\/api\/me\/request$/, (t, b) => store.childRequest(t, b)],
+  ['POST', /^\/api\/me\/history$/, (t, b) => store.childHistory(t, b)],
   ['POST', /^\/api\/me\/sos$/, (t, b) => store.childSos(t, b)],
 ];
 

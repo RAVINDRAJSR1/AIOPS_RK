@@ -23,20 +23,43 @@
   ];
   const APP_BY_ID = Object.fromEntries(APPS.map((a) => [a.id, a]));
 
+  // Categories a parent can lock as a group (essential apps never lock).
+  const CATEGORIES = ['Entertainment', 'Games', 'Social', 'Communication', 'Browser', 'Tools'];
+  // "Block games and videos with just one button".
+  const FUN_CATEGORIES = ['Games', 'Entertainment', 'Social'];
+
   const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const TRIAL_DAYS = 7;
 
-  function defaultRules() {
+  // Onboarding goals the parent can pick, and what IndiKids does for each.
+  const GOALS = [
+    { id: 'screen', icon: '📱', label: 'Reduce screen time', benefit: "Reclaim your child's time for important things to do off the phone" },
+    { id: 'study', icon: '📚', label: 'Improve focus on studies', benefit: 'Help your child stay focused on school and avoid phone distractions' },
+    { id: 'threats', icon: '🛡️', label: 'Protect from online threats', benefit: 'Protect your child from inappropriate websites and online threats' },
+    { id: 'sleep', icon: '🛏️', label: 'Set sleep schedule', benefit: 'Keep the phone away at bedtime so your child sleeps better' },
+    { id: 'calm', icon: '🪁', label: 'Reduce irritability', benefit: 'Fewer arguments: clear rules, and a polite way to ask for more time' },
+    { id: 'location', icon: '📍', label: 'Know where my kid is', benefit: 'Always know where your child is, without unnecessary calls or worries' },
+  ];
+
+  // Rules for a newly paired child. `setup` holds the parent's onboarding answers
+  // ({ goals: [...], answers: { sleepStudy: true, websites: true, ... } }); with no
+  // setup everything starts switched on.
+  function defaultRules(setup) {
+    const goals = (setup && setup.goals) || null;
+    const answers = (setup && setup.answers) || {};
+    const want = (goal, answer) => !goals || goals.includes(goal) || answers[answer] === true;
     return {
       dailyLimitMin: 120,
       appLimits: { youtube: 60, bgmi: 45, freefire: 45 },
       blockedApps: [],
+      blockedCategories: [],
       paused: false,
       bonus: {}, // { 'YYYY-MM-DD': extraMinutes }
       downtime: [
-        { id: 'bed', label: 'Bedtime', start: '21:30', end: '07:00', days: [0, 1, 2, 3, 4, 5, 6], enabled: true },
-        { id: 'study', label: 'Study hours', start: '17:00', end: '19:00', days: [1, 2, 3, 4, 5], enabled: true },
+        { id: 'school', label: 'School', start: '09:00', end: '15:00', days: [1, 2, 3, 4, 5], blocks: FUN_CATEGORIES.slice(), enabled: want('study', 'sleepStudy') },
+        { id: 'sleep', label: 'Sleep', start: '22:00', end: '07:00', days: [0, 1, 2, 3, 4, 5, 6], blocks: 'all', enabled: want('sleep', 'sleepStudy') },
       ],
+      web: { filter: true, blockAdult: true, blockGambling: true, blockedSites: [], allowedSites: [] },
     };
   }
 
@@ -59,15 +82,22 @@
     return d.getHours() * 60 + d.getMinutes();
   }
 
-  // Returns the downtime window active at `date`, or null. A window that crosses
-  // midnight (21:30 -> 07:00) belongs to the day it starts on.
-  function activeDowntime(rules, date) {
+  function windowBlocks(w, app) {
+    if (!app) return true;
+    return w.blocks === 'all' || w.blocks == null || (Array.isArray(w.blocks) && w.blocks.includes(app.category));
+  }
+
+  // Returns the downtime window active at `date`, or null. With `appId`, only a
+  // window that blocks that app counts. A window that crosses midnight
+  // (22:00 -> 07:00) belongs to the day it starts on.
+  function activeDowntime(rules, date, appId) {
+    const app = appId ? APP_BY_ID[appId] : null;
     const d = new Date(date);
     const now = minutesOfDay(d);
     const today = d.getDay();
     const yesterday = (today + 6) % 7;
     for (const w of rules.downtime || []) {
-      if (!w.enabled) continue;
+      if (!w.enabled || !windowBlocks(w, app)) continue;
       const s = parseHM(w.start);
       const e = parseHM(w.end);
       if (s === e) continue;
@@ -116,8 +146,9 @@
     if (!app) return { allowed: false, reason: 'unknown', remaining: 0 };
     if (app.essential) return { allowed: true, reason: 'essential', remaining: Infinity };
     if ((rules.blockedApps || []).includes(appId)) return { allowed: false, reason: 'blocked', remaining: 0 };
+    if ((rules.blockedCategories || []).includes(app.category)) return { allowed: false, reason: 'category', remaining: 0 };
     if (rules.paused) return { allowed: false, reason: 'paused', remaining: 0 };
-    const dt = activeDowntime(rules, date);
+    const dt = activeDowntime(rules, date, appId);
     if (dt) return { allowed: false, reason: 'downtime', remaining: 0, window: dt };
     const day = usageFor(child, date);
     const daily = remainingToday(child, date);
@@ -134,6 +165,7 @@
 
   const REASON_TEXT = {
     blocked: 'Blocked by your parent',
+    category: 'Games and videos are blocked by your parent right now',
     paused: 'Device paused by your parent',
     downtime: 'Downtime is on',
     'daily-limit': 'Daily screen time is used up',
@@ -150,6 +182,57 @@
     return m ? `${h}h ${m}m` : `${h}h`;
   }
 
+  // ---- Internet safety --------------------------------------------------------
+  // A small built-in list; the native app can swap in a full category database.
+  const ADULT_WORDS = ['porn', 'xxx', 'sex', 'nude', 'adult', 'xvideos', 'xnxx', 'onlyfans', 'hentai', 'nsfw'];
+  const GAMBLING_WORDS = ['casino', 'gambling', 'betting', 'bet365', '1xbet', 'stake.com', 'poker', 'rummy', 'teenpatti', 'teen-patti', 'lottery', 'satta', 'parimatch', 'roulette', 'slots'];
+
+  // Turn what the child typed into { host, url } or a search.
+  function parseAddress(input) {
+    const raw = String(input || '').trim();
+    if (!raw) return null;
+    if (/^[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(raw) || /^https?:\/\//i.test(raw)) {
+      try {
+        const u = new URL(/^https?:\/\//i.test(raw) ? raw : 'https://' + raw);
+        return { kind: 'site', host: u.hostname.replace(/^www\./, '').toLowerCase(), url: u.href };
+      } catch {
+        /* fall through to search */
+      }
+    }
+    return { kind: 'search', query: raw.slice(0, 200), url: 'https://www.google.com/search?safe=active&q=' + encodeURIComponent(raw.slice(0, 200)) };
+  }
+
+  function hostMatches(host, site) {
+    site = String(site).toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    return host === site || host.endsWith('.' + site);
+  }
+
+  // Decide if a site visit or search is allowed. Returns { allowed, reason }.
+  function checkWeb(rules, text) {
+    const web = rules.web || {};
+    const parsed = typeof text === 'string' ? parseAddress(text) : text;
+    if (!parsed) return { allowed: false, reason: 'empty' };
+    const hay = (parsed.host || '') + ' ' + (parsed.query || '') + ' ' + (parsed.url || '');
+    const lower = hay.toLowerCase();
+    if (parsed.host && (web.allowedSites || []).some((s) => hostMatches(parsed.host, s))) return { allowed: true, reason: 'allowed-list' };
+    if (parsed.host && (web.blockedSites || []).some((s) => hostMatches(parsed.host, s))) return { allowed: false, reason: 'blocked-site' };
+    if (!web.filter) return { allowed: true, reason: 'ok' };
+    if (web.blockAdult && ADULT_WORDS.some((w) => lower.includes(w))) return { allowed: false, reason: 'adult' };
+    if (web.blockGambling && GAMBLING_WORDS.some((w) => lower.includes(w))) return { allowed: false, reason: 'gambling' };
+    return { allowed: true, reason: 'ok' };
+  }
+
+  const WEB_REASON_TEXT = {
+    'blocked-site': 'Your parent blocked this website',
+    adult: 'This looks like an adult (18+) website',
+    gambling: 'This looks like a gambling website',
+  };
+
+  function cleanSite(s) {
+    const v = String(s || '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '');
+    return /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(v) ? v.slice(0, 80) : null;
+  }
+
   function validHM(s) {
     return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(s));
   }
@@ -163,10 +246,25 @@
       dailyLimitMin: clampMin(r.dailyLimitMin),
       appLimits: {},
       blockedApps: [],
+      blockedCategories: [],
       paused: !!r.paused,
       bonus: {},
       downtime: [],
+      web: { filter: true, blockAdult: true, blockGambling: true, blockedSites: [], allowedSites: [] },
     };
+    for (const c of r.blockedCategories || []) {
+      if (CATEGORIES.includes(c) && !out.blockedCategories.includes(c)) out.blockedCategories.push(c);
+    }
+    const w = r.web || base.web;
+    out.web.filter = w.filter !== false;
+    out.web.blockAdult = w.blockAdult !== false;
+    out.web.blockGambling = w.blockGambling !== false;
+    for (const key of ['blockedSites', 'allowedSites']) {
+      for (const site of (w[key] || []).slice(0, 100)) {
+        const c = cleanSite(site);
+        if (c && !out.web[key].includes(c)) out.web[key].push(c);
+      }
+    }
     for (const [id, v] of Object.entries(r.appLimits || {})) {
       if (APP_BY_ID[id] && !APP_BY_ID[id].essential && clampMin(v) > 0) out.appLimits[id] = clampMin(v);
     }
@@ -184,6 +282,7 @@
         start: w.start,
         end: w.end,
         days: [...new Set((w.days || []).map(Number).filter((d) => d >= 0 && d <= 6))].sort(),
+        blocks: Array.isArray(w.blocks) ? CATEGORIES.filter((c) => w.blocks.includes(c)) : 'all',
         enabled: w.enabled !== false,
       });
     }
@@ -193,6 +292,13 @@
   return {
     APPS,
     APP_BY_ID,
+    CATEGORIES,
+    FUN_CATEGORIES,
+    GOALS,
+    WEB_REASON_TEXT,
+    parseAddress,
+    checkWeb,
+    cleanSite,
     DAYS,
     TRIAL_DAYS,
     REASON_TEXT,

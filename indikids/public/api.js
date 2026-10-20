@@ -57,6 +57,8 @@
       report: (t, b) => call(() => store.childReport(t, b)),
       request: (t, b) => call(() => store.childRequest(t, b)),
       sos: (t, b) => call(() => store.childSos(t, b)),
+      history: (t, b) => call(() => store.childHistory(t, b)),
+      clearHistory: (t, id) => call(() => store.clearHistory(t, id)),
     };
   }
 
@@ -94,6 +96,8 @@
       report: (t, b) => req('POST', '/api/me/report', t, b),
       request: (t, b) => req('POST', '/api/me/request', t, b),
       sos: (t, b) => req('POST', '/api/me/sos', t, b),
+      history: (t, b) => req('POST', '/api/me/history', t, b),
+      clearHistory: (t, id) => req('DELETE', `/api/children/${id}/history`, t),
     };
   }
 
@@ -133,12 +137,12 @@
       load: () => JSON.parse(storageGet(DEMO_KEY) || '{}'),
       save: (s) => storageSet(DEMO_KEY, JSON.stringify(s)),
     });
-    const fam = store.createFamily({ parentName: 'Priya', acceptedTerms: true });
+    const fam = store.createFamily({ parentName: 'Priya', acceptedTerms: true, acceptedPrivacy: true });
     token.set('parent', fam.token);
     token.set('child', null);
     if (withChild) {
       const { code } = store.newPairCode(fam.token);
-      const kid = store.pair({ code, childName: 'Aarav', deviceName: 'Redmi Note 13', acceptedTerms: true });
+      const kid = store.pair({ code, childName: 'Aarav', deviceName: 'Redmi Note 13', acceptedTerms: true, acceptedPrivacy: true });
       token.set('child', kid.token);
       const state = JSON.parse(storageGet(DEMO_KEY));
       const child = state.families[fam.familyId].children[kid.childId];
@@ -154,6 +158,14 @@
       child.permissions = { location: true, usage: true, accessibility: true };
       child.location = { lat: 12.9716, lng: 77.5946, accuracy: 15, ts: Date.now() };
       child.battery = 76;
+      const mins = (m) => Date.now() - m * 60000;
+      child.history = [
+        { ts: mins(25), type: 'web', text: 'en.wikipedia.org', blocked: false, reason: '' },
+        { ts: mins(40), type: 'youtube', text: 'solar system for kids', blocked: false, reason: '' },
+        { ts: mins(55), type: 'web', text: 'online-casino-bonus.com', blocked: true, reason: 'gambling' },
+        { ts: mins(90), type: 'web', text: 'how to draw a tiger', blocked: false, reason: '' },
+        { ts: mins(130), type: 'youtube', text: 'minecraft survival ep 12', blocked: false, reason: '' },
+      ];
       state.families[fam.familyId].events.unshift({ id: 'seed', ts: Date.now() - 36e5, type: 'info', text: 'Demo family created' });
       storageSet(DEMO_KEY, JSON.stringify(state));
     }
