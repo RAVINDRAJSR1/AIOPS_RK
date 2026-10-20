@@ -16,3 +16,11 @@ a sandbox where students can try code, and mini projects.
 **No install?** Open `python_class6_playground/web/index.html` in a browser. The whole course runs there too.
 
 Full guide, lesson list and teacher notes: [python_class6_playground/README.md](python_class6_playground/README.md)
+
+## 🌐 HTML Playground for Class 6–7
+
+A step-by-step HTML course with a live preview, quizzes, self-checking challenges and a
+scorecard that shows each student's trend. Works on phones and iPads too.
+
+**Quick start:** open `html_class6_7_playground/index.html` in any browser.
+Full guide: [html_class6_7_playground/README.md](html_class6_7_playground/README.md)

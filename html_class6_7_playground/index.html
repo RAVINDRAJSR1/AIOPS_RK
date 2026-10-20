@@ -1,0 +1,1291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HTML Playground Class 6-7</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23c2255c%22/%3E%3Ctext x=%2216%22 y=%2222%22 font-size=%2214%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22monospace%22 font-weight=%22bold%22%3E%3C/%3E%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Lexend:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a code workbench. Lessons down the left (a chip strip on phones);
+   each lesson reads top to bottom: explanation -> editor | live preview -> next.
+   Pink is the colour of tags, teal the colour of attributes, as in a code editor. */
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --ink: #161b2e;
+  --muted: #586079;
+  --line: #d9deea;
+  --tag: #c2255c;
+  --tag-soft: #fde7ef;
+  --attr: #0b7285;
+  --attr-soft: #e0f4f6;
+  --sun: #e8590c;
+  --good: #2b8a3e;
+  --good-soft: #e3f6e8;
+  --bad: #c92a2a;
+  --bad-soft: #fdeaea;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --font-display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
+  --font-body: "Lexend", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10131f; --surface: #181c2c; --ink: #e9ecf7; --muted: #9aa3bf; --line: #2b3149;
+    --tag: #f06595; --tag-soft: #3a1626; --attr: #3bc9db; --attr-soft: #0f3036; --sun: #ffa94d;
+    --good: #69db7c; --good-soft: #143321; --bad: #ff8787; --bad-soft: #3b1717;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+    --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10131f; --surface: #181c2c; --ink: #e9ecf7; --muted: #9aa3bf; --line: #2b3149;
+  --tag: #f06595; --tag-soft: #3a1626; --attr: #3bc9db; --attr-soft: #0f3036; --sun: #ffa94d;
+  --good: #69db7c; --good-soft: #143321; --bad: #ff8787; --bad-soft: #3b1717;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500;
+  --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.6 var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { -webkit-appearance: none; appearance: none; }
+:focus-visible { outline: 3px solid var(--attr); outline-offset: 2px; }
+code { font: .9em var(--font-code); background: var(--tag-soft); color: var(--tag); padding: 1px 5px; border-radius: 5px; white-space: nowrap; }
+
+.app { display: flex; flex-direction: column; min-height: 100%; }
+
+/* ---------- header ---------- */
+header {
+  display: flex; align-items: center; gap: 10px 14px; flex-wrap: wrap;
+  padding-block: 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand { margin: 0; font: 700 1.4rem/1 var(--font-display); letter-spacing: .01em; }
+.brand .lt { color: var(--tag); }
+.brand .nm { color: var(--attr); }
+.grade { font-size: .72rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.who { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.who label { font-size: .8rem; color: var(--muted); }
+.who select {
+  min-height: 40px; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 0 10px;
+  font-size: 16px; max-width: 170px;
+}
+
+/* ---------- layout ---------- */
+.shell { flex: 1; display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 0; }
+nav {
+  background: var(--surface); border-right: 1px solid var(--line);
+  padding: 12px 10px 24px; display: flex; flex-direction: column; gap: 2px;
+}
+.nav-label { font-size: .7rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 10px 4px; }
+.nav-item {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 8px;
+  text-align: left; border: 0; background: none; padding: 7px 10px; border-radius: 10px; cursor: pointer; min-height: 44px;
+}
+.nav-item:hover { background: var(--bg); }
+.nav-item[aria-current="true"] { background: var(--tag-soft); }
+.nav-num {
+  width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+  font: 600 .8rem var(--font-code); color: var(--tag); background: var(--tag-soft);
+}
+.nav-item[aria-current="true"] .nav-num { background: var(--tag); color: var(--surface); }
+.nav-item.done .nav-num { background: var(--good-soft); color: var(--good); }
+.nav-title { font-size: .92rem; line-height: 1.3; }
+
+main {
+  min-width: 0;
+  padding-block: 26px 70px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.page { max-width: 1040px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+.narrow { max-width: 760px; }
+
+.eyebrow { font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+h2 { font: 700 2rem/1.15 var(--font-display); margin: 2px 0 0; text-wrap: balance; }
+h3 { font: 700 1.25rem/1.25 var(--font-display); margin: 0; }
+.goal { margin: 8px 0 0; color: var(--muted); max-width: 65ch; }
+.goal b { color: var(--ink); }
+
+.steps { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.dot { width: 28px; height: 8px; border-radius: 99px; background: var(--line); border: 0; padding: 0; cursor: pointer; }
+.dot.seen { background: var(--tag); opacity: .4; }
+.dot.now { background: var(--tag); }
+.steps .count { font-size: .85rem; color: var(--muted); margin-left: 6px; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.explain p { margin: 0 0 .7em; max-width: 68ch; }
+.explain p:last-child, .explain ul:last-child { margin-bottom: 0; }
+.explain ul { margin: 0 0 .7em; padding-left: 1.2em; }
+.explain li { margin: .15em 0; }
+
+/* ---------- workbench (editor + preview) ---------- */
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+.pane { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); min-width: 0; }
+.pane-bar {
+  display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 14px;
+  border-bottom: 1px solid var(--line); min-height: 48px;
+}
+.pane-name { font: 600 .8rem var(--font-code); color: var(--muted); margin-right: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editor {
+  display: block; width: 100%; border: 0; margin: 0; resize: vertical;
+  padding: 14px; min-height: 230px;
+  font: 16px/1.55 var(--font-code); background: var(--surface); color: var(--ink);
+  white-space: pre; overflow-x: auto; overflow-wrap: normal; tab-size: 2;
+}
+.editor:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--attr); }
+.keys { display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--line); overflow-x: auto; background: var(--bg); }
+.key {
+  flex: 0 0 auto; min-width: 44px; min-height: 40px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font: 600 15px var(--font-code); cursor: pointer; padding: 0 10px;
+}
+.key.wide { color: var(--tag); }
+.preview { display: block; width: 100%; height: 320px; border: 0; background: #fff; }
+.preview-note { font-size: .78rem; color: var(--muted); padding: 6px 12px; border-top: 1px solid var(--line); }
+
+.btn {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 10px; min-height: 40px;
+  padding: 6px 14px; font-weight: 600; font-size: .92rem; cursor: pointer;
+}
+.btn:hover { border-color: var(--tag); }
+.btn.primary { background: var(--tag); border-color: var(--tag); color: #fff; }
+.btn.big { min-height: 48px; padding: 10px 20px; font-size: 1rem; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.btn.small { min-height: 36px; padding: 4px 10px; font-size: .85rem; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.tip { font-size: .88rem; color: var(--muted); margin: 0; }
+
+/* ---------- quiz & challenge ---------- */
+.q { display: flex; flex-direction: column; gap: 10px; }
+.q-text { font-weight: 600; }
+.options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; }
+.opt {
+  text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 12px;
+  padding: 10px 12px; cursor: pointer; display: flex; gap: 10px; align-items: baseline; min-height: 48px;
+  font-family: var(--font-code); font-size: .92rem;
+}
+.opt:hover:not(:disabled) { border-color: var(--tag); }
+.opt b { font-family: var(--font-display); color: var(--tag); }
+.opt:disabled { cursor: default; color: var(--ink); opacity: 1; }
+.opt.right { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.why { border-radius: 10px; padding: 8px 12px; font-size: .95rem; }
+.why.right { background: var(--good-soft); }
+.why.wrong { background: var(--bad-soft); }
+.big-score { font: 700 1.6rem var(--font-display); }
+.stars { color: var(--sun); font-size: 1.6rem; letter-spacing: 3px; }
+.checks { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.checks li { display: flex; gap: 8px; align-items: baseline; }
+.checks .mark { font-weight: 700; width: 1.2em; flex: 0 0 auto; }
+.checks .ok .mark { color: var(--good); }
+.checks .no .mark { color: var(--bad); }
+.hintbox { background: var(--attr-soft); border-radius: 10px; padding: 10px 14px; }
+.hintbox b { display: block; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--attr); }
+.saved { background: var(--good-soft); border-radius: 10px; padding: 10px 14px; }
+.savebox { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.field {
+  min-height: 44px; border: 1px solid var(--line); background: var(--surface); border-radius: 10px;
+  padding: 8px 12px; font-size: 16px; min-width: 0;
+}
+pre.solution { font: .9rem/1.55 var(--font-code); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; margin: 10px 0; }
+
+/* ---------- scorecard ---------- */
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); border: 1px solid var(--line); border-radius: 99px; padding: 3px 10px; }
+.badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.badge.live::before { background: var(--good); }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.tile .label { font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tile .value { font: 700 1.8rem/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.tile .sub { font-size: .82rem; color: var(--muted); }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; align-items: end; }
+.form-grid label { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; color: var(--muted); }
+.chart-wrap { position: relative; }
+.chart { display: block; width: 100%; height: auto; touch-action: pan-y; }
+.chart text { font-family: var(--font-body); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .85rem; margin-top: 8px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+.tooltip {
+  position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px; font-size: .82rem; box-shadow: 0 6px 18px rgba(0,0,0,.12);
+  min-width: 150px; max-width: 220px; z-index: 2;
+}
+.tooltip b { display: block; }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+table.log { width: 100%; border-collapse: collapse; font-size: .9rem; min-width: 560px; }
+table.log th, table.log td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.log th { font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+table.log td.num { font-variant-numeric: tabular-nums; text-align: right; }
+table.log tr:last-child td { border-bottom: 0; }
+.kind { font-size: .75rem; border-radius: 99px; padding: 2px 8px; background: var(--bg); border: 1px solid var(--line); white-space: nowrap; }
+.empty { text-align: center; color: var(--muted); padding: 30px 16px; }
+.toast {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-size: .9rem; z-index: 20;
+  max-width: calc(100% - 32px);
+}
+
+/* ---------- phones & tablets ---------- */
+@media (max-width: 980px) {
+  .bench { grid-template-columns: minmax(0, 1fr); }
+  .preview { height: 260px; }
+}
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); }
+  nav {
+    flex-direction: row; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line);
+    padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px));
+    -webkit-overflow-scrolling: touch;
+  }
+  .nav-label { display: none; }
+  .nav-item { flex: 0 0 auto; grid-template-columns: 30px auto; }
+  .nav-title { white-space: nowrap; }
+  h2 { font-size: 1.6rem; }
+  .card { padding: 16px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .who { margin-left: 0; width: 100%; }
+  .who select { flex: 1; max-width: none; }
+}
+@media (max-width: 600px) {
+  table.log { min-width: 0; }
+  table.log thead { display: none; }
+  table.log tbody, table.log tr, table.log td { display: block; }
+  table.log tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px;
+    grid-template-areas: "who score" "what pct" "date del";
+    padding: 12px 14px; border-bottom: 1px solid var(--line);
+  }
+  table.log tr:last-child { border-bottom: 0; }
+  table.log td { border: 0; padding: 2px 0; }
+  table.log td.c-date { grid-area: date; font-size: .8rem; color: var(--muted); align-self: center; }
+  table.log td.c-who { grid-area: who; font-weight: 600; }
+  table.log td.c-what { grid-area: what; }
+  table.log td.c-score { grid-area: score; text-align: right; font-weight: 600; }
+  table.log td.c-pct { grid-area: pct; text-align: right; color: var(--muted); }
+  table.log td.c-del { grid-area: del; text-align: right; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .page { animation: rise .2s ease-out; }
+  @keyframes rise { from { transform: translateY(5px); } to { transform: none; } }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1 class="brand"><span class="lt">&lt;</span>HTML<span class="nm"> Playground</span><span class="lt">&gt;</span></h1>
+    <span class="grade">Class 6–7</span>
+    <div class="who">
+      <label for="student">Learner</label>
+      <select id="student"></select>
+    </div>
+  </header>
+  <div class="shell">
+    <nav id="nav" aria-label="Lessons"></nav>
+    <main id="main"></main>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   LESSONS
+   Teachers: copy one lesson block to add your own.
+   In explanations, {{text}} is shown in code style.
+   Challenge checks use CSS selectors to look inside the student's page:
+     { sel: "ul > li", min: 3, msg: "..." }          at least 3 matches
+     { sel: "h1", style: { "text-align": "center" } } computed style must match
+     { sel: "p", styleNot: { "background-color": "rgba(0, 0, 0, 0)" } }
+   ===================================================================== */
+const LESSONS = [
+  {
+    title: "Hello, HTML!",
+    goal: "Learn what tags are and make your first web page.",
+    steps: [
+      { explain: "Every website you have ever visited is built with {{HTML}} (HyperText Markup Language). HTML tells the browser what each part of the page is: a heading, a paragraph, a picture.\n\nHTML uses TAGS. A tag is a word inside angle brackets, like {{<p>}}. Most tags come in pairs:\n- an opening tag {{<p>}}\n- a closing tag {{</p>}} with a slash\n\nThe opening tag, the content and the closing tag together make an ELEMENT. Look at the preview: the browser shows the content and hides the tags.",
+        code: "<h1>Hello, World!</h1>\n<p>This is my very first web page.</p>" },
+      { explain: "Change the words between the tags and watch the preview change as you type. You are now a web developer!\n\n{{<h1>}} is a big heading. {{<p>}} is a paragraph.",
+        code: "<h1>My Favourite Things</h1>\n<p>I love cricket, mangoes and drawing.</p>\n<p>My best friend is Kabir.</p>" },
+      { explain: "Tags can go INSIDE other tags. This is called NESTING. {{<b>}} makes text bold.\n\nThe rule: close tags in the opposite order you opened them, like boxes inside boxes.\n- Right: {{<p><b>happy</b></p>}}\n- Wrong: {{<p><b>happy</p></b>}}",
+        code: "<p>I am <b>very</b> happy today!</p>\n<p>Python and <b>HTML</b> are fun.</p>" },
+      { explain: "HTML does not care about capital letters in tags, but everyone writes them in small letters. It also ignores extra spaces and new lines inside text, as you will see here.\n\nTo see the HTML of any real website, right-click on a page and choose View Page Source.",
+        code: "<h1>Spaces       are       squashed</h1>\n<p>This line\nand this line\nend up on the same line!</p>" },
+    ],
+    quiz: [
+      { q: "What does HTML stand for?", options: ["Hyper Tool Making Language", "HyperText Markup Language", "Home Text Mail Language", "High Tech Modern Language"], answer: 1, why: "HTML = HyperText Markup Language." },
+      { q: "Which one is a CLOSING tag?", options: ["<p>", "</p>", "<p/>", "(p)"], answer: 1, why: "Closing tags have a slash after the < sign." },
+      { q: "Which line is nested correctly?", options: ["<p><b>Hi</p></b>", "<p><b>Hi</b></p>", "<b><p>Hi</b></p>", "<p>Hi<b></p>"], answer: 1, why: "The tag opened last (<b>) must close first." },
+    ],
+    challenge: {
+      task: "Make a page with a big heading that shows your name, and two paragraphs about yourself.",
+      hint: "Use one <h1>...</h1> and two <p>...</p>.",
+      solution: "<h1>Ananya Rao</h1>\n<p>I study in Class 6 at Sunrise Public School.</p>\n<p>I like painting and playing badminton.</p>",
+      checks: [
+        { sel: "h1", msg: "A heading with <h1>" },
+        { sel: "p", min: 2, msg: "At least two paragraphs with <p>" },
+      ],
+    },
+  },
+  {
+    title: "Headings and Paragraphs",
+    goal: "Organise text with headings, line breaks, lines and comments.",
+    steps: [
+      { explain: "There are six heading sizes, from {{<h1>}} (biggest) to {{<h6>}} (smallest).\n\nUse {{<h1>}} once for the main title of the page, {{<h2>}} for sections and {{<h3>}} for smaller parts, like chapters and topics in your textbook.",
+        code: "<h1>Science</h1>\n<h2>Chapter 1: Food</h2>\n<h3>Sources of food</h3>\n<h4>Plants</h4>\n<h5>Fruits</h5>\n<h6>Mango</h6>" },
+      { explain: "Remember that HTML ignores new lines you type. To break a line, use {{<br>}}. It is an EMPTY element: it has no content and no closing tag.\n\nThis is perfect for poems and addresses.",
+        code: "<h2>Twinkle Twinkle</h2>\n<p>\n  Twinkle, twinkle, little star,<br>\n  How I wonder what you are!<br>\n  Up above the world so high,<br>\n  Like a diamond in the sky.\n</p>" },
+      { explain: "{{<hr>}} draws a horizontal line across the page to separate topics. It is empty too, so no closing tag.",
+        code: "<h2>Monday</h2>\n<p>Maths test today.</p>\n<hr>\n<h2>Tuesday</h2>\n<p>Library period.</p>" },
+      { explain: "A COMMENT is a note for people reading your code. The browser ignores it.\n\nComments start with {{<!--}} and end with {{-->}}.",
+        code: "<!-- This is my homework page -->\n<h1>Homework</h1>\n<!-- TODO: add Hindi homework -->\n<p>English: Read chapter 3.</p>" },
+    ],
+    quiz: [
+      { q: "Which heading is the BIGGEST?", options: ["<h6>", "<h3>", "<h1>", "<head>"], answer: 2, why: "<h1> is the biggest heading; <h6> is the smallest." },
+      { q: "Which tag starts a new line?", options: ["<br>", "<hr>", "<lb>", "<new>"], answer: 0, why: "<br> means line break. <hr> draws a line across." },
+      { q: "How do you write a comment?", options: ["// note", "# note", "<!-- note -->", "<comment>note</comment>"], answer: 2, why: "HTML comments live between <!-- and -->." },
+    ],
+    challenge: {
+      task: "Write a short poem (at least 3 lines) with an <h2> title. Put each line on its own line using <br>, and finish with an <hr> line.",
+      hint: "<h2>Title</h2> then <p>line one<br>line two<br>line three</p> then <hr>",
+      solution: "<h2>Monsoon</h2>\n<p>\n  Grey clouds rolling in,<br>\n  Paper boats begin,<br>\n  Puddles everywhere!\n</p>\n<hr>",
+      checks: [
+        { sel: "h2", msg: "A title with <h2>" },
+        { sel: "br", min: 2, msg: "At least two <br> line breaks" },
+        { sel: "hr", msg: "An <hr> line" },
+      ],
+    },
+  },
+  {
+    title: "Bold, Italic and More",
+    goal: "Format text, including science formulas and maths powers.",
+    steps: [
+      { explain: "Make words stand out:\n- {{<b>}} or {{<strong>}} for bold (strong = important)\n- {{<i>}} or {{<em>}} for italic (em = emphasis)\n- {{<u>}} for underline\n- {{<mark>}} to highlight, like a highlighter pen",
+        code: "<p>This is <b>bold</b> and this is <strong>important</strong>.</p>\n<p>This is <i>italic</i> and this is <em>emphasised</em>.</p>\n<p>This is <u>underlined</u>.</p>\n<p>Revise <mark>chapter 4</mark> before the test!</p>" },
+      { explain: "Science and maths need small raised or lowered text.\n- {{<sub>}} SUBscript sits low: H{{<sub>}}2{{</sub>}}O\n- {{<sup>}} SUPerscript sits high: 5{{<sup>}}2{{</sup>}} (5 squared)",
+        code: "<p>Water is H<sub>2</sub>O.</p>\n<p>Carbon dioxide is CO<sub>2</sub>.</p>\n<p>5<sup>2</sup> = 25 and 10<sup>3</sup> = 1000</p>\n<p>Area of a square = side<sup>2</sup></p>" },
+      { explain: "Two more useful ones:\n- {{<del>}} draws a line through old text\n- {{<small>}} makes text smaller, for notes",
+        code: "<h2>School Fair Sale</h2>\n<p>Price: <del>Rs 500</del> Rs 350</p>\n<p><small>Offer valid till Sunday only.</small></p>" },
+    ],
+    quiz: [
+      { q: "How do you write H₂O (the 2 low)?", options: ["H<sup>2</sup>O", "H<sub>2</sub>O", "H<low>2</low>O", "H<small>2</small>O"], answer: 1, why: "<sub> puts text below the line (subscript)." },
+      { q: "Which shows 3 squared (3²)?", options: ["3<sub>2</sub>", "3<sup>2</sup>", "3<b>2</b>", "3^2"], answer: 1, why: "<sup> raises text above the line (superscript)." },
+      { q: "Which tag highlights text like a highlighter pen?", options: ["<mark>", "<high>", "<u>", "<color>"], answer: 0, why: "<mark> gives text a highlighted background." },
+    ],
+    challenge: {
+      task: "Write two facts: 'Water is H2O' with the 2 written as subscript, and '4 squared is 16' as 4² = 16 using superscript. Highlight one word with <mark>.",
+      hint: "H<sub>2</sub>O and 4<sup>2</sup> = 16. Wrap any word in <mark>...</mark>.",
+      solution: "<p><mark>Water</mark> is H<sub>2</sub>O.</p>\n<p>4<sup>2</sup> = 16</p>",
+      checks: [
+        { sel: "sub", msg: "A subscript with <sub>" },
+        { sel: "sup", msg: "A superscript with <sup>" },
+        { sel: "mark", msg: "A highlighted word with <mark>" },
+      ],
+    },
+  },
+  {
+    title: "Lists",
+    goal: "Make bullet lists, numbered lists and lists inside lists.",
+    steps: [
+      { explain: "An UNORDERED list {{<ul>}} shows bullet points. Each item goes in {{<li>}} (list item).\n\nUse it when order does not matter, like things in your school bag.",
+        code: "<h3>My school bag</h3>\n<ul>\n  <li>Books</li>\n  <li>Pencil box</li>\n  <li>Water bottle</li>\n  <li>Lunch box</li>\n</ul>" },
+      { explain: "An ORDERED list {{<ol>}} numbers the items for you. Use it when order matters, like steps in an experiment.\n\nTry adding a new step in the middle: the numbers update by themselves!",
+        code: "<h3>How to make lemonade</h3>\n<ol>\n  <li>Squeeze two lemons into a glass.</li>\n  <li>Add sugar and a pinch of salt.</li>\n  <li>Pour cold water and stir.</li>\n  <li>Add ice and enjoy!</li>\n</ol>" },
+      { explain: "The {{type}} attribute changes the numbering: {{type=\"A\"}} for A, B, C or {{type=\"i\"}} for i, ii, iii. {{start=\"5\"}} begins counting at 5.",
+        code: "<ol type=\"A\">\n  <li>Mercury</li>\n  <li>Venus</li>\n</ol>\n<ol type=\"i\">\n  <li>Introduction</li>\n  <li>Experiment</li>\n</ol>" },
+      { explain: "Lists can be NESTED: put a whole list inside an {{<li>}}. Look at how the inner list sits inside the item before {{</li>}}.",
+        code: "<ul>\n  <li>Science\n    <ul>\n      <li>Plants</li>\n      <li>Magnets</li>\n    </ul>\n  </li>\n  <li>Maths\n    <ul>\n      <li>Fractions</li>\n      <li>Geometry</li>\n    </ul>\n  </li>\n</ul>" },
+    ],
+    quiz: [
+      { q: "Which tag makes a NUMBERED list?", options: ["<ul>", "<ol>", "<li>", "<nl>"], answer: 1, why: "<ol> = ordered list, which is numbered." },
+      { q: "What goes around each item in a list?", options: ["<item>", "<li>", "<p>", "<br>"], answer: 1, why: "Each list item is wrapped in <li>...</li>." },
+      { q: "Which list would you use for steps to plant a seed?", options: ["<ul>", "<ol>", "Either, it does not matter", "<steps>"], answer: 1, why: "Steps happen in order, so a numbered <ol> is best." },
+    ],
+    challenge: {
+      task: "Make a numbered list of 4 steps to plant a seed, and a bullet list of 3 things a plant needs to grow.",
+      hint: "<ol> with four <li> items, then <ul> with three <li> items.",
+      solution: "<h3>Planting a seed</h3>\n<ol>\n  <li>Fill a pot with soil.</li>\n  <li>Make a small hole.</li>\n  <li>Drop in the seed and cover it.</li>\n  <li>Water it gently.</li>\n</ol>\n<h3>A plant needs</h3>\n<ul>\n  <li>Sunlight</li>\n  <li>Water</li>\n  <li>Air</li>\n</ul>",
+      checks: [
+        { sel: "ol > li", min: 4, msg: "A numbered list <ol> with 4 or more items" },
+        { sel: "ul > li", min: 3, msg: "A bullet list <ul> with 3 or more items" },
+      ],
+    },
+  },
+  {
+    title: "Links",
+    goal: "Connect pages together with links.",
+    steps: [
+      { explain: "The {{<a>}} tag makes a LINK (the a stands for anchor). The address goes in an ATTRIBUTE called {{href}}.\n\nAn attribute gives extra information about an element. It always goes in the OPENING tag, written as {{name=\"value\"}}.",
+        code: "<p>Learn more on <a href=\"https://www.wikipedia.org\">Wikipedia</a>.</p>" },
+      { explain: "Add {{target=\"_blank\"}} to open the link in a new tab, so your page stays open.",
+        code: "<ul>\n  <li><a href=\"https://www.isro.gov.in\" target=\"_blank\">ISRO</a></li>\n  <li><a href=\"https://ncert.nic.in\" target=\"_blank\">NCERT</a></li>\n</ul>" },
+      { explain: "Links can also jump to a part of the SAME page. Give the target element an {{id}}, then link to it with {{href=\"#id\"}}.\n\nTap the link in the preview to try it.",
+        code: "<p><a href=\"#answers\">Jump to the answers</a></p>\n<h2>Questions</h2>\n<p>1. What is 7 x 8?</p>\n<p>2. What is the capital of India?</p>\n<p style=\"height: 400px\">(scroll down...)</p>\n<h2 id=\"answers\">Answers</h2>\n<p>1. 56 &nbsp; 2. New Delhi</p>" },
+    ],
+    quiz: [
+      { q: "Which attribute holds a link's address?", options: ["src", "link", "href", "url"], answer: 2, why: "href = hypertext reference, the address of the link." },
+      { q: "Where do attributes go?", options: ["In the closing tag", "In the opening tag", "Between the tags", "In a comment"], answer: 1, why: "Attributes are always written inside the opening tag." },
+      { q: "What does target=\"_blank\" do?", options: ["Makes the link blank", "Opens the link in a new tab", "Hides the link", "Makes it bold"], answer: 1, why: "_blank opens the page in a new tab or window." },
+    ],
+    challenge: {
+      task: "Make a list of 3 websites you find useful for school. Each one must be a link.",
+      hint: "<ul><li><a href=\"https://...\">Name</a></li> ... </ul>",
+      solution: "<h3>Websites I like</h3>\n<ul>\n  <li><a href=\"https://www.wikipedia.org\">Wikipedia</a></li>\n  <li><a href=\"https://ncert.nic.in\">NCERT</a></li>\n  <li><a href=\"https://www.isro.gov.in\">ISRO</a></li>\n</ul>",
+      checks: [
+        { sel: "a[href]", min: 3, msg: "Three links, each with an href" },
+        { sel: "li a", min: 3, msg: "The links are inside list items <li>" },
+      ],
+    },
+  },
+  {
+    title: "Pictures",
+    goal: "Add images with useful descriptions.",
+    steps: [
+      { explain: "{{<img>}} shows a picture. It is EMPTY (no closing tag) and needs two attributes:\n- {{src}}: where the picture is (source)\n- {{alt}}: words that describe the picture\n\nThis playground has a picture library you can use: {{cat.svg}}, {{sun.svg}}, {{tree.svg}}, {{rocket.svg}} and {{book.svg}}.",
+        code: "<h2>My pet</h2>\n<img src=\"cat.svg\" alt=\"A smiling orange cat\">" },
+      { explain: "{{width}} and {{height}} set the size in pixels. Give only one and the picture keeps its shape.",
+        code: "<img src=\"rocket.svg\" alt=\"Rocket\" width=\"60\">\n<img src=\"rocket.svg\" alt=\"Rocket\" width=\"120\">\n<img src=\"rocket.svg\" alt=\"Rocket\" width=\"180\">" },
+      { explain: "Why does {{alt}} matter? People who cannot see use screen readers that read the alt text aloud. And if a picture fails to load, the alt text is shown instead, like here:",
+        code: "<img src=\"taj-mahal.jpg\" alt=\"The Taj Mahal in Agra, a white marble building\">" },
+      { explain: "{{<figure>}} groups a picture with a caption written in {{<figcaption>}}, like the pictures in your textbook.",
+        code: "<figure>\n  <img src=\"tree.svg\" alt=\"A green tree\" width=\"140\">\n  <figcaption>Fig 1: Trees give us oxygen.</figcaption>\n</figure>" },
+    ],
+    quiz: [
+      { q: "Which attribute tells the browser WHERE the picture is?", options: ["alt", "href", "src", "pic"], answer: 2, why: "src (source) is the picture's address." },
+      { q: "Why should every image have alt text?", options: ["It makes the picture bigger", "It describes the picture for people who cannot see it", "It adds a border", "It is not needed"], answer: 1, why: "Screen readers read alt text aloud, and it shows if the image fails to load." },
+      { q: "Does <img> need a closing tag?", options: ["Yes, </img>", "No, it is an empty element", "Only for big pictures", "Only with alt"], answer: 1, why: "<img> is empty, like <br> and <hr>." },
+    ],
+    challenge: {
+      task: "Show two pictures from the library, each with alt text, and give one of them a caption using <figure> and <figcaption>.",
+      hint: "<figure><img src=\"sun.svg\" alt=\"...\"><figcaption>...</figcaption></figure>",
+      solution: "<figure>\n  <img src=\"sun.svg\" alt=\"A bright yellow sun\" width=\"120\">\n  <figcaption>The Sun is a star.</figcaption>\n</figure>\n<img src=\"book.svg\" alt=\"An open book\" width=\"120\">",
+      checks: [
+        { sel: "img[src][alt]", min: 2, msg: "Two pictures, each with src and alt" },
+        { sel: "figure figcaption", msg: "A caption with <figure> and <figcaption>" },
+      ],
+    },
+  },
+  {
+    title: "Tables",
+    goal: "Show information in rows and columns, like a timetable.",
+    steps: [
+      { explain: "A table is built row by row:\n- {{<table>}} holds the whole table\n- {{<tr>}} is a table row\n- {{<td>}} is a table data cell, inside a row\n\n{{border=\"1\"}} draws lines so you can see the cells.",
+        code: "<table border=\"1\">\n  <tr>\n    <td>Apple</td>\n    <td>Rs 30</td>\n  </tr>\n  <tr>\n    <td>Banana</td>\n    <td>Rs 10</td>\n  </tr>\n</table>" },
+      { explain: "{{<th>}} is a heading cell. It is bold and centred. Put headings in the first row. {{<caption>}} gives the table a title.",
+        code: "<table border=\"1\">\n  <caption>Class 6 Marks</caption>\n  <tr>\n    <th>Name</th>\n    <th>Maths</th>\n    <th>Science</th>\n  </tr>\n  <tr>\n    <td>Riya</td>\n    <td>92</td>\n    <td>88</td>\n  </tr>\n  <tr>\n    <td>Arjun</td>\n    <td>85</td>\n    <td>94</td>\n  </tr>\n</table>" },
+      { explain: "{{colspan=\"3\"}} makes one cell stretch across 3 columns, which is perfect for a lunch break in a timetable.",
+        code: "<table border=\"1\">\n  <tr><th>Day</th><th>9:00</th><th>10:00</th></tr>\n  <tr><td>Mon</td><td>Maths</td><td>English</td></tr>\n  <tr><td colspan=\"3\">LUNCH BREAK</td></tr>\n  <tr><td>Tue</td><td>Science</td><td>Hindi</td></tr>\n</table>" },
+    ],
+    quiz: [
+      { q: "Which tag makes a ROW?", options: ["<td>", "<tr>", "<row>", "<th>"], answer: 1, why: "<tr> = table row." },
+      { q: "Which tag makes a bold HEADING cell?", options: ["<th>", "<td>", "<h1>", "<head>"], answer: 0, why: "<th> = table heading." },
+      { q: "How do you make one cell cover 2 columns?", options: ["width=\"2\"", "colspan=\"2\"", "rows=\"2\"", "span=\"2\""], answer: 1, why: "colspan spans a cell across columns." },
+    ],
+    challenge: {
+      task: "Make a table about 3 friends with two columns: Name and Favourite Subject. Use <th> for the heading row.",
+      hint: "First <tr> has two <th>. Then three more <tr>, each with two <td>.",
+      solution: "<table border=\"1\">\n  <tr><th>Name</th><th>Favourite Subject</th></tr>\n  <tr><td>Meera</td><td>Science</td></tr>\n  <tr><td>Kabir</td><td>Art</td></tr>\n  <tr><td>Sara</td><td>Maths</td></tr>\n</table>",
+      checks: [
+        { sel: "table", msg: "A <table>" },
+        { sel: "th", min: 2, msg: "Two heading cells <th>" },
+        { sel: "tr", min: 4, msg: "Four rows <tr> (1 heading + 3 friends)" },
+      ],
+    },
+  },
+  {
+    title: "Colours and Style",
+    goal: "Change colours, sizes and alignment with the style attribute.",
+    steps: [
+      { explain: "The {{style}} attribute changes how an element looks. Inside it you write PROPERTY: VALUE; pairs.\n\n{{color}} changes the text colour. Browsers know about 140 colour names, like red, teal, orange and purple.",
+        code: "<h1 style=\"color: purple;\">Purple heading</h1>\n<p style=\"color: teal;\">Teal paragraph</p>\n<p style=\"color: orangered;\">Orange-red paragraph</p>" },
+      { explain: "More properties to try:\n- {{background-color}}: colour behind the text\n- {{font-size}}: size, for example 24px\n- {{text-align}}: left, center or right\n\nSeparate properties with a semicolon {{;}}.",
+        code: "<h1 style=\"text-align: center; color: white; background-color: darkgreen;\">Sports Day</h1>\n<p style=\"font-size: 22px;\">Date: 15 November</p>\n<p style=\"text-align: right;\">From: Class 7-A</p>" },
+      { explain: "Colours can also be written as a HEX code: {{#}} and six digits for the amounts of red, green and blue. {{#ff0000}} is red, {{#00aa00}} is green, {{#0000ff}} is blue.",
+        code: "<p style=\"background-color: #ffe066; padding: 10px;\">Sunny yellow box</p>\n<p style=\"background-color: #74c0fc; padding: 10px;\">Sky blue box</p>\n<p style=\"color: #ffffff; background-color: #e8590c; padding: 10px;\">White on orange</p>" },
+      { explain: "Writing {{style}} on every tag is slow. A {{<style>}} block styles ALL the matching tags at once. This is called CSS, and you will learn much more about it later.",
+        code: "<style>\n  h2 { color: crimson; }\n  p { font-size: 18px; color: navy; }\n</style>\n<h2>Fruits</h2>\n<p>Mango</p>\n<p>Guava</p>\n<h2>Vegetables</h2>\n<p>Carrot</p>" },
+    ],
+    quiz: [
+      { q: "Which property changes the TEXT colour?", options: ["text-color", "color", "font-color", "colour"], answer: 1, why: "In CSS it is just color (American spelling)." },
+      { q: "Which centres a heading?", options: ["align: middle", "text-align: center", "center: yes", "position: center"], answer: 1, why: "text-align: center puts the text in the middle." },
+      { q: "What colour is #ff0000?", options: ["Red", "Green", "Blue", "Black"], answer: 0, why: "ff (full) red, 00 green, 00 blue = red." },
+    ],
+    challenge: {
+      task: "Make a centred heading with a coloured font, and a paragraph with a coloured background.",
+      hint: "<h1 style=\"text-align: center; color: green;\"> and <p style=\"background-color: yellow;\">",
+      solution: "<h1 style=\"text-align: center; color: green;\">Save Trees</h1>\n<p style=\"background-color: yellow;\">Plant one tree every year.</p>",
+      checks: [
+        { sel: "h1", style: { "text-align": "center" }, msg: "A heading <h1> centred with text-align: center" },
+        { sel: "h1", styleNot: { color: "rgb(0, 0, 0)" }, msg: "The heading has a colour that is not black" },
+        { sel: "p", styleNot: { "background-color": "rgba(0, 0, 0, 0)" }, msg: "A paragraph with a background-color" },
+      ],
+    },
+  },
+  {
+    title: "Forms",
+    goal: "Build forms with text boxes, choices and buttons.",
+    steps: [
+      { explain: "Forms let people type and choose things. Everything goes inside {{<form>}}.\n- {{<input type=\"text\">}} is a text box\n- {{<label>}} is the words that explain it\n- {{placeholder}} shows a light example inside the box\n\n(These forms are for practice; they do not send anything.)",
+        code: "<form>\n  <label>Your name:\n    <input type=\"text\" placeholder=\"e.g. Rohan\">\n  </label>\n</form>" },
+      { explain: "RADIO buttons let you pick only ONE choice. Give them the same {{name}} so they work as a group.\n\nCHECKBOXES let you pick many.",
+        code: "<form>\n  <p>Your class:</p>\n  <label><input type=\"radio\" name=\"class\"> 6</label>\n  <label><input type=\"radio\" name=\"class\"> 7</label>\n  <p>Hobbies:</p>\n  <label><input type=\"checkbox\"> Reading</label>\n  <label><input type=\"checkbox\"> Music</label>\n  <label><input type=\"checkbox\"> Sports</label>\n</form>" },
+      { explain: "A drop-down list uses {{<select>}} with {{<option>}} inside. A big box for longer writing is {{<textarea>}}. {{<button>}} makes a button.",
+        code: "<form>\n  <label>Favourite subject:\n    <select>\n      <option>Maths</option>\n      <option>Science</option>\n      <option>English</option>\n    </select>\n  </label>\n  <p><label>Tell us why:<br>\n    <textarea rows=\"3\" cols=\"30\"></textarea>\n  </label></p>\n  <button>Send</button>\n</form>" },
+    ],
+    quiz: [
+      { q: "You can pick only ONE of these. Which input type?", options: ["checkbox", "radio", "text", "select"], answer: 1, why: "Radio buttons allow one choice in a group." },
+      { q: "Which tag makes a drop-down list?", options: ["<list>", "<select>", "<dropdown>", "<ol>"], answer: 1, why: "<select> holds <option> items." },
+      { q: "What do radio buttons in one group share?", options: ["The same name", "The same colour", "The same label", "Nothing"], answer: 0, why: "Same name = same group, so only one can be picked." },
+    ],
+    challenge: {
+      task: "Make a 'Join the Science Club' form with: a text box for the name, a drop-down to pick Class 6 or 7, at least two checkboxes for interests, and a button.",
+      hint: "<input type=\"text\">, <select> with two <option>, two <input type=\"checkbox\">, and <button>.",
+      solution: "<h2>Join the Science Club</h2>\n<form>\n  <label>Name: <input type=\"text\"></label>\n  <p><label>Class:\n    <select>\n      <option>Class 6</option>\n      <option>Class 7</option>\n    </select>\n  </label></p>\n  <p>Interests:</p>\n  <label><input type=\"checkbox\"> Space</label>\n  <label><input type=\"checkbox\"> Robots</label>\n  <p><button>Join</button></p>\n</form>",
+      checks: [
+        { sel: "input[type=text], input:not([type])", msg: "A text box for the name" },
+        { sel: "select option", min: 2, msg: "A drop-down <select> with two options" },
+        { sel: "input[type=checkbox]", min: 2, msg: "At least two checkboxes" },
+        { sel: "button, input[type=submit]", msg: "A button" },
+      ],
+    },
+  },
+  {
+    title: "A Complete Web Page",
+    goal: "Put a full page together with a proper structure.",
+    steps: [
+      { explain: "Real web pages have a skeleton:\n- {{<!DOCTYPE html>}} says \"this is a modern HTML page\"\n- {{<html>}} wraps everything\n- {{<head>}} holds information ABOUT the page, like the {{<title>}} shown on the browser tab\n- {{<body>}} holds everything you SEE",
+        code: "<!DOCTYPE html>\n<html>\n  <head>\n    <title>My Page</title>\n  </head>\n  <body>\n    <h1>Welcome!</h1>\n    <p>This page has a proper skeleton.</p>\n  </body>\n</html>" },
+      { explain: "Inside {{<body>}}, special tags name the parts of the page:\n- {{<header>}} for the top\n- {{<nav>}} for the menu of links\n- {{<main>}} for the main content, split into {{<section>}}s\n- {{<footer>}} for the bottom\n\nThey help search engines and screen readers understand your page.",
+        code: "<header style=\"background: #364fc7; color: white; padding: 10px;\">\n  <h1>Green Valley School</h1>\n</header>\n<nav>\n  <a href=\"#about\">About</a> |\n  <a href=\"#clubs\">Clubs</a>\n</nav>\n<main>\n  <section id=\"about\">\n    <h2>About us</h2>\n    <p>A happy school with 600 students.</p>\n  </section>\n  <section id=\"clubs\">\n    <h2>Clubs</h2>\n    <ul><li>Science</li><li>Music</li></ul>\n  </section>\n</main>\n<footer>\n  <small>Made by Class 7-B</small>\n</footer>" },
+      { explain: "Now everything together: headings, a picture, a list, a table and styles. Change it into a page about YOUR favourite place!",
+        code: "<header style=\"text-align: center; background: #fff3bf; padding: 8px;\">\n  <h1>Our Trip to the Planetarium</h1>\n</header>\n<main>\n  <img src=\"rocket.svg\" alt=\"A rocket\" width=\"90\">\n  <h2>What we saw</h2>\n  <ul>\n    <li>The <mark>rings of Saturn</mark></li>\n    <li>A model of Chandrayaan-3</li>\n  </ul>\n  <h2>Planet facts</h2>\n  <table border=\"1\">\n    <tr><th>Planet</th><th>Moons</th></tr>\n    <tr><td>Earth</td><td>1</td></tr>\n    <tr><td>Mars</td><td>2</td></tr>\n  </table>\n</main>\n<footer><small>Written by Class 6-A</small></footer>" },
+    ],
+    quiz: [
+      { q: "Where does the <title> tag go?", options: ["In <body>", "In <head>", "In <footer>", "Anywhere"], answer: 1, why: "<title> is information about the page, so it lives in <head>." },
+      { q: "Which part holds what you SEE on the page?", options: ["<head>", "<body>", "<title>", "<!DOCTYPE>"], answer: 1, why: "Everything visible goes inside <body>." },
+      { q: "Which tag is for a menu of links?", options: ["<menu-links>", "<nav>", "<footer>", "<list>"], answer: 1, why: "<nav> = navigation." },
+    ],
+    challenge: {
+      task: "Build an 'All About Me' page with: a <header> containing an <h1>, a <nav> with at least 2 links, a <main> with a list and a picture, and a <footer>.",
+      hint: "Copy the structure from step 2, then add <ul>, <img> and your own words.",
+      solution: "<header>\n  <h1>All About Me</h1>\n</header>\n<nav>\n  <a href=\"#likes\">Likes</a> | <a href=\"#dream\">Dream</a>\n</nav>\n<main>\n  <img src=\"book.svg\" alt=\"An open book\" width=\"80\">\n  <h2 id=\"likes\">Things I like</h2>\n  <ul>\n    <li>Reading stories</li>\n    <li>Football</li>\n  </ul>\n  <h2 id=\"dream\">My dream</h2>\n  <p>I want to be an astronaut.</p>\n</main>\n<footer><small>Made by me in Class 7</small></footer>",
+      checks: [
+        { sel: "header h1", msg: "A <header> with an <h1> inside" },
+        { sel: "nav a[href]", min: 2, msg: "A <nav> with at least 2 links" },
+        { sel: "main li", min: 1, msg: "A list inside <main>" },
+        { sel: "main img[alt]", msg: "A picture with alt text inside <main>" },
+        { sel: "footer", msg: "A <footer>" },
+      ],
+    },
+  },
+];
+
+/* Picture library: <img src="cat.svg"> in a student's page uses these. */
+const PICTURES = {
+  "cat.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><path d="M25 45 L30 12 L52 34 Z M95 45 L90 12 L68 34 Z" fill="#f08c00"/><circle cx="60" cy="66" r="42" fill="#f08c00"/><circle cx="45" cy="58" r="6" fill="#212529"/><circle cx="75" cy="58" r="6" fill="#212529"/><path d="M55 72 L65 72 L60 78 Z" fill="#e64980"/><path d="M48 84 Q60 94 72 84" stroke="#212529" stroke-width="4" fill="none" stroke-linecap="round"/></svg>',
+  "sun.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><g stroke="#f59f00" stroke-width="8" stroke-linecap="round"><path d="M60 6v16M60 98v16M6 60h16M98 60h16M22 22l11 11M87 87l11 11M22 98l11-11M87 33l11-11"/></g><circle cx="60" cy="60" r="28" fill="#fcc419"/></svg>',
+  "tree.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect x="52" y="70" width="16" height="44" rx="4" fill="#8d5524"/><circle cx="60" cy="48" r="36" fill="#2f9e44"/><circle cx="38" cy="62" r="20" fill="#37b24d"/><circle cx="82" cy="62" r="20" fill="#37b24d"/></svg>',
+  "rocket.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><path d="M60 6 C82 26 84 62 76 88 L44 88 C36 62 38 26 60 6 Z" fill="#dee2e6" stroke="#495057" stroke-width="3"/><circle cx="60" cy="44" r="10" fill="#4dabf7" stroke="#495057" stroke-width="3"/><path d="M44 70 L26 96 L46 90 Z M76 70 L94 96 L74 90 Z" fill="#e03131"/><path d="M50 90 L60 116 L70 90 Z" fill="#fd7e14"/></svg>',
+  "book.svg": '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><path d="M10 28 Q35 18 58 30 L58 100 Q35 88 10 98 Z" fill="#4dabf7"/><path d="M110 28 Q85 18 62 30 L62 100 Q85 88 110 98 Z" fill="#339af0"/><g stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M20 42 Q34 38 48 44M20 56 Q34 52 48 58M72 44 Q86 38 100 42M72 58 Q86 52 100 56"/></g></svg>',
+};
+
+/* ===================================================================== */
+const LETTERS = "ABCD";
+const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source", "track", "wbr"]);
+
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const key in attrs || {}) {
+    const value = attrs[key];
+    if (key === "class") el.className = value;
+    else if (key.slice(0, 2) === "on") el.addEventListener(key.slice(2), value);
+    else if (value === true) el.setAttribute(key, "");
+    else if (value !== false && value != null) el.setAttribute(key, value);
+  }
+  for (const child of children.flat(Infinity)) {
+    if (child == null || child === false) continue;
+    el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return el;
+}
+function local(key, value) {
+  try {
+    if (value === undefined) return JSON.parse(localStorage.getItem("html67." + key));
+    localStorage.setItem("html67." + key, JSON.stringify(value));
+  } catch (e) { return null; }
+}
+let toastTimer;
+function toast(message) {
+  const el = document.getElementById("toast");
+  el.textContent = message; el.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { el.hidden = true; }, 3200);
+}
+function inline(text) {
+  // {{code}} becomes a code chip
+  const parts = text.split(/\{\{|\}\}/);
+  return parts.map((part, i) => i % 2 ? h("code", {}, part) : part);
+}
+function renderExplain(text) {
+  const box = h("div", { class: "explain" });
+  for (const para of text.split("\n\n")) {
+    const lines = para.split("\n");
+    let bullets = null;
+    for (const line of lines) {
+      if (line.slice(0, 2) === "- ") {
+        if (!bullets) { bullets = h("ul"); box.append(bullets); }
+        bullets.append(h("li", {}, inline(line.slice(2))));
+      } else {
+        bullets = null;
+        box.append(h("p", {}, inline(line)));
+      }
+    }
+  }
+  return box;
+}
+function today() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function fmtDate(iso) {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+/* ---------- turning student code into a page ---------- */
+function withPictures(code) {
+  return code.replace(/(src\s*=\s*["']?)([a-z-]+\.svg)/gi, (all, start, name) => {
+    const svg = PICTURES[name.toLowerCase()];
+    return svg ? start + "data:image/svg+xml," + encodeURIComponent(svg) : all;
+  });
+}
+function pageDoc(code) {
+  const head = '<meta name="viewport" content="width=device-width, initial-scale=1"><style>body{font-family:system-ui,-apple-system,sans-serif;margin:12px;color:#111;background:#fff}</style>';
+  const body = withPictures(code);
+  // Keep <!DOCTYPE> first so full pages render in standards mode.
+  if (/<head[^>]*>/i.test(body)) return body.replace(/<head[^>]*>/i, m => m + head);
+  if (/^\s*<!doctype/i.test(body)) return body.replace(/^(\s*<!doctype[^>]*>)/i, "$1" + head);
+  return "<!DOCTYPE html>" + head + body;
+}
+
+/* ---------- editor + live preview ---------- */
+function closeLastTag(text) {
+  const stack = [];
+  const re = /<(\/?)([a-zA-Z][a-zA-Z0-9-]*)[^>]*?(\/?)>/g;
+  let m;
+  const clean = text.replace(/<!--[\s\S]*?-->/g, "");
+  while ((m = re.exec(clean))) {
+    const name = m[2].toLowerCase();
+    if (VOID_TAGS.has(name) || m[3]) continue;
+    if (m[1]) { const i = stack.lastIndexOf(name); if (i >= 0) stack.splice(i); }
+    else stack.push(name);
+  }
+  return stack.length ? "</" + stack[stack.length - 1] + ">" : "";
+}
+
+function makeBench(startCode, opts) {
+  opts = opts || {};
+  const editor = h("textarea", {
+    class: "editor", spellcheck: "false", autocapitalize: "off", autocomplete: "off", autocorrect: "off",
+    "aria-label": "HTML code", id: opts.id || null,
+  });
+  editor.value = startCode;
+  const frame = h("iframe", { class: "preview", title: "Preview of your page", sandbox: "allow-popups allow-popups-to-escape-sandbox" });
+  let timer;
+  function refresh() { frame.srcdoc = pageDoc(editor.value); if (opts.onChange) opts.onChange(editor.value); }
+  editor.addEventListener("input", () => { clearTimeout(timer); timer = setTimeout(refresh, 250); });
+
+  function insert(text) {
+    const start = editor.selectionStart, end = editor.selectionEnd;
+    editor.setRangeText(text, start, end, "end");
+    editor.dispatchEvent(new Event("input"));
+  }
+  editor.addEventListener("keydown", e => {
+    if (e.key === "Tab" && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey && editor.dataset.esc !== "1") { e.preventDefault(); insert("  "); }
+    if (e.key === "Escape") editor.dataset.esc = "1"; else if (e.key !== "Tab") editor.dataset.esc = "";
+  });
+
+  // Keys that are hard to find on a phone keyboard.
+  const keyDefs = [["<", "<"], [">", ">"], ["/", "/"], ["=", "="], ['"', '"'], ["Tab", "  "]];
+  const keys = h("div", { class: "keys", "aria-label": "Extra keys" },
+    keyDefs.map(([label, text]) => h("button", { class: "key", type: "button", "aria-label": "Type " + label,
+      onpointerdown: e => e.preventDefault(), onclick: () => { editor.focus(); insert(text); } }, label)),
+    h("button", { class: "key wide", type: "button", title: "Close the last open tag",
+      onpointerdown: e => e.preventDefault(),
+      onclick: () => { const tag = closeLastTag(editor.value.slice(0, editor.selectionStart)); if (tag) { editor.focus(); insert(tag); } else toast("No open tag to close."); } }, "Close tag"));
+
+  const reset = h("button", { class: "btn small", type: "button", onclick: () => { editor.value = startCode; refresh(); } }, "Reset");
+  const reload = h("button", { class: "btn small", type: "button", title: "Show the page again", onclick: refresh }, "Refresh");
+  const bench = h("div", { class: "bench" },
+    h("div", { class: "pane" }, h("div", { class: "pane-bar" }, h("span", { class: "pane-name" }, opts.file || "index.html"), reset), editor, keys),
+    h("div", { class: "pane" }, h("div", { class: "pane-bar" }, h("span", { class: "pane-name" }, "Live preview"), reload), frame,
+      h("div", { class: "preview-note" }, "Updates as you type. Clicked a link and lost your page? Press Refresh.")));
+  bench.getCode = () => editor.value;
+  bench.setCode = code => { editor.value = code; refresh(); };
+  refresh();
+  return bench;
+}
+
+/* ---------- challenge checker ---------- */
+function runChecks(code, checks) {
+  return new Promise(resolve => {
+    const frame = h("iframe", { sandbox: "allow-same-origin", style: "position:absolute;left:-9999px;width:400px;height:300px;border:0", "aria-hidden": "true", tabindex: "-1" });
+    frame.addEventListener("load", () => {
+      let results;
+      try {
+        const doc = frame.contentDocument;
+        const win = frame.contentWindow;
+        results = checks.map(check => {
+          let found = [];
+          try { found = Array.from(doc.querySelectorAll(check.sel)); } catch (e) { found = []; }
+          if (check.style || check.styleNot) {
+            found = found.filter(el => {
+              const cs = win.getComputedStyle(el);
+              for (const p in check.style || {}) if (cs.getPropertyValue(p) !== check.style[p]) return false;
+              for (const p in check.styleNot || {}) if (cs.getPropertyValue(p) === check.styleNot[p]) return false;
+              return true;
+            });
+          }
+          return { msg: check.msg, ok: found.length >= (check.min || 1) };
+        });
+      } catch (e) {
+        results = checks.map(check => ({ msg: check.msg, ok: false }));
+      }
+      frame.remove();
+      resolve(results);
+    }, { once: true });
+    frame.srcdoc = pageDoc(code);
+    document.body.append(frame);
+  });
+}
+
+/* =====================================================================
+   SCORECARD STORE
+   In the claude.ai viewer, scores are saved to the artifact's shared
+   database so a teacher sees the whole class. Anywhere else (opened as
+   a file, GitHub Pages) they are saved in this browser.
+   Entry: { student, kind: quiz|challenge|manual, title, lesson, score, total, at, by }
+   ===================================================================== */
+const Store = {
+  dbRows: [], localRows: local("scores") || [],
+  db: null, canWrite: false, canDelete: false, userId: null, listeners: [],
+  get live() { return !!this.db; },
+  rows() { return this.dbRows.concat(this.localRows).sort((a, b) => a.at < b.at ? -1 : a.at > b.at ? 1 : 0); },
+  emit() { this.listeners.forEach(fn => fn()); },
+  async connect() {
+    if (!window.claude || typeof window.claude.use !== "function") return;
+    let db = null, user = null;
+    try { [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]); } catch (e) { return; }
+    if (!db) return;
+    this.db = db;
+    if (user) {
+      this.userId = await user.id();
+      const canWrite = await user.can("data.write");
+      this.canWrite = canWrite !== false;
+      this.canDelete = await user.canEdit();
+    } else { this.canWrite = true; }
+    db.collection("scores").orderBy("at", "desc").limit(1000).onSnapshot(snap => {
+      this.dbRows = snap.docs.map(d => Object.assign({ id: d.id, where: "db" }, d.data()));
+      this.emit();
+    }, () => { this.db = null; this.dbRows = []; this.emit(); });
+    this.emit();
+  },
+  async add(entry) {
+    const row = {
+      student: String(entry.student).trim().slice(0, 40), kind: entry.kind, title: String(entry.title || "").slice(0, 80),
+      lesson: entry.lesson == null ? null : entry.lesson, score: Number(entry.score), total: Number(entry.total),
+      at: entry.at || new Date().toISOString(), by: this.userId,
+    };
+    if (this.db && this.canWrite) {
+      try { await this.db.collection("scores").add(row); return "db"; }
+      catch (e) { if (e && e.code === "invalid_argument") this.canWrite = false; }
+    }
+    row.id = "local-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+    row.where = "local";
+    this.localRows.push(row); local("scores", this.localRows); this.emit();
+    return "local";
+  },
+  async remove(row) {
+    if (row.where === "local") {
+      this.localRows = this.localRows.filter(r => r.id !== row.id); local("scores", this.localRows); this.emit();
+      return;
+    }
+    await this.db.collection("scores").doc(row.id).delete();
+  },
+};
+
+/* ---------- learners ---------- */
+function studentNames() {
+  const names = new Set((local("students") || []).filter(Boolean));
+  Store.rows().forEach(r => r.student && names.add(r.student));
+  return Array.from(names).sort((a, b) => a.localeCompare(b));
+}
+let currentStudent = local("current") || "";
+function setStudent(name) {
+  name = (name || "").trim().slice(0, 40);
+  currentStudent = name; local("current", name);
+  if (name) {
+    const list = local("students") || [];
+    if (list.indexOf(name) < 0) { list.push(name); local("students", list); }
+  }
+  renderWho(); render();
+}
+function renderWho() {
+  const select = document.getElementById("student");
+  const names = studentNames();
+  const opts = [h("option", { value: "" }, names.length ? "Choose your name" : "Add your name")];
+  names.forEach(n => opts.push(h("option", { value: n, selected: n === currentStudent }, n)));
+  opts.push(h("option", { value: "__new" }, "+ New learner…"));
+  select.replaceChildren(...opts);
+  select.value = names.indexOf(currentStudent) >= 0 ? currentStudent : "";
+}
+document.getElementById("student").addEventListener("change", e => {
+  if (e.target.value === "__new") { e.target.value = currentStudent; go({ kind: "learner" }); }
+  else setStudent(e.target.value);
+});
+
+function lessonDone(student, i) {
+  return Store.rows().some(r => r.student === student && r.kind === "challenge" && r.lesson === i + 1);
+}
+
+/* ---------- saving a result ---------- */
+function saveResult(entry, box) {
+  async function save(name) {
+    const where = await Store.add(Object.assign({ student: name }, entry));
+    box.replaceChildren(h("div", { class: "saved" },
+      h("b", {}, "Saved to the scorecard"), " for ", name,
+      where === "db" ? " (class database)." : " (on this device)."));
+  }
+  if (currentStudent) { save(currentStudent); return; }
+  const input = h("input", { class: "field", type: "text", placeholder: "Your name", "aria-label": "Your name", maxlength: "40", id: "save-name" });
+  const form = h("form", { class: "savebox", onsubmit: e => {
+    e.preventDefault();
+    if (!input.value.trim()) { input.focus(); return; }
+    const name = input.value.trim(); local("current", name); currentStudent = name;
+    const list = local("students") || []; if (list.indexOf(name) < 0) { list.push(name); local("students", list); }
+    renderWho(); save(name);
+  } }, h("span", {}, "Type your name to save this to the scorecard:"), input, h("button", { class: "btn primary", type: "submit" }, "Save"));
+  box.replaceChildren(form);
+}
+
+/* =====================================================================
+   VIEWS
+   ===================================================================== */
+let view = { kind: "lesson", lesson: 0, stage: "step", step: 0 };
+const savedView = local("view");
+if (savedView && savedView.kind) view = savedView;
+if (location.hash === "#scorecard") view = { kind: "scorecard" };
+if (view.kind === "lesson" && !LESSONS[view.lesson]) view = { kind: "lesson", lesson: 0, stage: "step", step: 0 };
+
+function go(next) {
+  view = next; local("view", view); render();
+  window.scrollTo(0, 0);
+}
+
+function renderNav() {
+  const nav = document.getElementById("nav");
+  const items = [h("div", { class: "nav-label" }, "Lessons")];
+  LESSONS.forEach((lesson, i) => {
+    const done = currentStudent && lessonDone(currentStudent, i);
+    items.push(h("button", {
+      class: "nav-item" + (done ? " done" : ""), type: "button",
+      "aria-current": String(view.kind === "lesson" && view.lesson === i),
+      onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: 0 }),
+    }, h("span", { class: "nav-num", "aria-hidden": "true" }, done ? "✓" : String(i + 1)), h("span", { class: "nav-title" }, lesson.title)));
+  });
+  items.push(h("div", { class: "nav-label" }, "Your work"));
+  items.push(h("button", { class: "nav-item", type: "button", "aria-current": String(view.kind === "scorecard"), onclick: () => go({ kind: "scorecard" }) },
+    h("span", { class: "nav-num", "aria-hidden": "true" }, "▲"), h("span", { class: "nav-title" }, "Scorecard")));
+  items.push(h("button", { class: "nav-item", type: "button", "aria-current": String(view.kind === "sandbox"), onclick: () => go({ kind: "sandbox" }) },
+    h("span", { class: "nav-num", "aria-hidden": "true" }, "</>"), h("span", { class: "nav-title" }, "Free practice")));
+  nav.replaceChildren(...items);
+}
+
+function lessonHead(i) {
+  const lesson = LESSONS[i];
+  return h("div", {},
+    h("div", { class: "eyebrow" }, "Lesson " + (i + 1) + " of " + LESSONS.length),
+    h("h2", {}, lesson.title),
+    h("p", { class: "goal" }, h("b", {}, "Goal: "), lesson.goal));
+}
+
+function renderStep(i, s) {
+  const lesson = LESSONS[i], step = lesson.steps[s], last = s === lesson.steps.length - 1;
+  return [
+    lessonHead(i),
+    h("div", { class: "steps" },
+      lesson.steps.map((_, k) => h("button", { class: "dot" + (k === s ? " now" : k < s ? " seen" : ""), type: "button", "aria-label": "Step " + (k + 1),
+        onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: k }) })),
+      h("span", { class: "count" }, "Step " + (s + 1) + " of " + lesson.steps.length + ", then a quiz")),
+    h("div", { class: "card" }, renderExplain(step.explain)),
+    h("p", { class: "tip" }, "Edit the code and the preview changes as you type. Break it on purpose and see what happens!"),
+    makeBench(step.code, { file: "lesson" + (i + 1) + "-step" + (s + 1) + ".html", id: "editor-step" }),
+    h("div", { class: "row between" },
+      h("button", { class: "btn big", type: "button", disabled: s === 0, onclick: () => go({ kind: "lesson", lesson: i, stage: "step", step: s - 1 }) }, "← Back"),
+      h("button", { class: "btn big primary", type: "button", onclick: () => go(last ? { kind: "lesson", lesson: i, stage: "quiz" } : { kind: "lesson", lesson: i, stage: "step", step: s + 1 }) },
+        last ? "Quiz time →" : "Next step →")),
+  ];
+}
+
+function renderQuiz(i) {
+  const lesson = LESSONS[i];
+  let answered = 0, score = 0;
+  const result = h("div", { class: "card", hidden: true });
+  const questions = lesson.quiz.map((item, n) => {
+    const why = h("div", { class: "why", hidden: true });
+    const buttons = item.options.map((option, k) => h("button", { class: "opt", type: "button", onclick: () => {
+      const right = k === item.answer;
+      buttons.forEach(b => { b.disabled = true; });
+      buttons[item.answer].classList.add("right");
+      if (!right) buttons[k].classList.add("wrong");
+      why.hidden = false; why.className = "why " + (right ? "right" : "wrong");
+      why.replaceChildren(h("b", {}, right ? "Correct! " : "Not quite. The answer is " + LETTERS[item.answer] + ". "), item.why);
+      answered++; if (right) score++;
+      if (answered === lesson.quiz.length) finish();
+    } }, h("b", {}, LETTERS[k]), option));
+    return h("div", { class: "card q" }, h("div", { class: "q-text" }, (n + 1) + ". " + item.q), h("div", { class: "options" }, buttons), why);
+  });
+  function finish() {
+    const total = lesson.quiz.length;
+    const saveBox = h("div");
+    result.hidden = false;
+    result.replaceChildren(
+      h("div", { class: "stars", "aria-hidden": "true" }, "★".repeat(score) + "☆".repeat(total - score)),
+      h("div", { class: "big-score" }, "You got " + score + " out of " + total),
+      h("p", {}, score === total ? "Perfect! You really understand this lesson." : score >= total / 2 ? "Good work! Look again at the one you missed." : "Keep going. Read the steps again and try the quiz once more."),
+      saveBox,
+      h("div", { class: "row between", style: "margin-top: 12px" },
+        h("button", { class: "btn big", type: "button", onclick: () => go({ kind: "lesson", lesson: i, stage: "quiz" }) }, "Try again"),
+        h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "lesson", lesson: i, stage: "challenge" }) }, "Your challenge →")));
+    saveResult({ kind: "quiz", title: "Quiz: " + lesson.title, lesson: i + 1, score: score, total: total }, saveBox);
+    result.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  return [lessonHead(i), h("h3", {}, "Quiz time! Tap an answer."), questions, result];
+}
+
+function renderChallenge(i) {
+  const lesson = LESSONS[i], c = lesson.challenge, next = i + 1 < LESSONS.length;
+  const draftKey = "draft." + i;
+  const bench = makeBench(local(draftKey) || "<!-- Write your HTML here -->\n", {
+    file: "my-challenge.html", id: "editor-challenge",
+    onChange: code => local(draftKey, code),
+  });
+  const checkList = h("ul", { class: "checks" }, c.checks.map(k => h("li", { class: "" }, h("span", { class: "mark", "aria-hidden": "true" }, "○"), k.msg)));
+  const outcome = h("div");
+  const hint = h("div", { class: "hintbox", hidden: true }, h("b", {}, "Hint"), c.hint);
+  const answer = h("div", { class: "card", hidden: true },
+    h("b", {}, "One possible answer. Yours can look different and still pass!"),
+    h("pre", { class: "solution" }, c.solution),
+    h("button", { class: "btn", type: "button", onclick: () => bench.setCode(c.solution) }, "Put this answer in the editor"));
+  let passed = false;
+  async function check() {
+    const results = await runChecks(bench.getCode(), c.checks);
+    checkList.replaceChildren(...results.map(r => h("li", { class: r.ok ? "ok" : "no" },
+      h("span", { class: "mark", "aria-hidden": "true" }, r.ok ? "✓" : "✗"), h("span", {}, (r.ok ? "Done: " : "Not yet: ") + r.msg))));
+    const all = results.every(r => r.ok);
+    if (all && !passed) {
+      passed = true;
+      const saveBox = h("div");
+      outcome.replaceChildren(h("div", { class: "saved" }, h("b", {}, "Challenge complete! "), "Brilliant work."), saveBox);
+      saveResult({ kind: "challenge", title: "Challenge: " + lesson.title, lesson: i + 1, score: 1, total: 1 }, saveBox);
+      renderNav();
+    } else if (!all) {
+      outcome.replaceChildren(h("p", { class: "tip" }, "Not finished yet. Fix the items marked ✗ and check again."));
+    }
+  }
+  return [
+    lessonHead(i),
+    h("div", { class: "card" }, h("div", { class: "eyebrow" }, "Your challenge"), h("p", { style: "margin: .3em 0 0; font-size: 1.08rem" }, c.task),
+      h("div", { style: "margin-top: 10px" }, h("b", {}, "Your page needs:")), checkList),
+    bench,
+    h("div", { class: "row" },
+      h("button", { class: "btn big primary", type: "button", onclick: check }, "Check my page"),
+      h("button", { class: "btn", type: "button", onclick: () => { hint.hidden = false; } }, "Show a hint"),
+      h("button", { class: "btn", type: "button", onclick: () => { answer.hidden = false; } }, "Show an answer")),
+    outcome, hint, answer,
+    h("div", { class: "row between" },
+      h("button", { class: "btn big", type: "button", onclick: () => go({ kind: "scorecard" }) }, "See my scorecard"),
+      next ? h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "lesson", lesson: i + 1, stage: "step", step: 0 }) }, "Next: Lesson " + (i + 2) + " →")
+           : h("button", { class: "btn big primary", type: "button", onclick: () => go({ kind: "sandbox" }) }, "Free practice →")),
+  ];
+}
+
+function renderSandbox() {
+  return [
+    h("div", {}, h("div", { class: "eyebrow" }, "Your work"), h("h2", {}, "Free practice")),
+    h("p", { class: "tip" }, "Build anything you like. Your work is kept on this device. Pictures you can use: cat.svg, sun.svg, tree.svg, rocket.svg, book.svg."),
+    makeBench(local("sandbox") || "<h1 style=\"color: teal;\">My page</h1>\n<p>Start building here!</p>\n<img src=\"sun.svg\" alt=\"Sun\" width=\"80\">", {
+      file: "practice.html", id: "editor-sandbox", onChange: code => local("sandbox", code) }),
+  ];
+}
+
+function renderLearner() {
+  const input = h("input", { class: "field", type: "text", id: "new-learner", placeholder: "First name, e.g. Riya", maxlength: "40", autocomplete: "off" });
+  setTimeout(() => input.focus(), 50);
+  return [h("div", { class: "page narrow" },
+    h("div", {}, h("div", { class: "eyebrow" }, "Scorecard"), h("h2", {}, "Add a learner")),
+    h("p", {}, "Quiz scores and finished challenges are saved under this name. On a shared class computer, each student picks their own name from the Learner menu at the top before starting."),
+    h("form", { class: "savebox", onsubmit: e => { e.preventDefault(); if (input.value.trim()) { setStudent(input.value); go({ kind: "lesson", lesson: 0, stage: "step", step: 0 }); } } },
+      input, h("button", { class: "btn primary big", type: "submit" }, "Start learning")))];
+}
+
+/* ---------- scorecard ---------- */
+let scoreFilter = local("scoreFilter") || "";
+let chartCleanup = null;
+
+function seriesColor(index) { return "var(--s" + ((index % 8) + 1) + ")"; }
+
+function drawTrend(container, series) {
+  // series: [{ name, color, points: [{ t, pct, row }] }]
+  const W = Math.max(300, container.clientWidth || 600), H = Math.round(Math.min(320, Math.max(220, W * 0.42)));
+  const pad = { l: 44, r: series.length <= 4 && W > 520 ? 90 : 16, t: 14, b: 34 };
+  const all = series.flatMap(s => s.points);
+  let t0 = Math.min.apply(null, all.map(p => p.t)), t1 = Math.max.apply(null, all.map(p => p.t));
+  if (t1 - t0 < 36e5) { t0 -= 36e5 * 12; t1 += 36e5 * 12; }
+  const x = t => pad.l + (t - t0) / (t1 - t0) * (W - pad.l - pad.r);
+  const y = v => pad.t + (1 - v / 100) * (H - pad.t - pad.b);
+  const NS = "http://www.w3.org/2000/svg";
+  const s = (tag, attrs) => { const el = document.createElementNS(NS, tag); for (const k in attrs) el.setAttribute(k, attrs[k]); return el; };
+  const svg = s("svg", { viewBox: "0 0 " + W + " " + H, class: "chart", role: "img", "aria-label": "Score trend chart. Percentage scores over time." });
+  [0, 25, 50, 75, 100].forEach(v => {
+    svg.append(s("line", { x1: pad.l, x2: W - pad.r, y1: y(v), y2: y(v), stroke: "var(--line)", "stroke-width": 1 }));
+    const label = s("text", { x: pad.l - 8, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" });
+    label.textContent = v + "%"; svg.append(label);
+  });
+  const ticks = 4;
+  for (let k = 0; k <= ticks; k++) {
+    const t = t0 + (t1 - t0) * k / ticks;
+    if (W < 420 && k % 2) continue;
+    const label = s("text", { x: x(t), y: H - 10, "text-anchor": k === 0 ? "start" : k === ticks ? "end" : "middle", "font-size": 11, fill: "var(--muted)" });
+    label.textContent = new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short" }); svg.append(label);
+  }
+  const single = series.length === 1;
+  series.forEach(se => {
+    const pts = se.points;
+    const d = pts.map((p, k) => (k ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.pct).toFixed(1)).join(" ");
+    if (single && pts.length > 1) {
+      svg.append(s("path", { d: d + " L" + x(pts[pts.length - 1].t).toFixed(1) + " " + y(0) + " L" + x(pts[0].t).toFixed(1) + " " + y(0) + " Z", fill: se.color, "fill-opacity": 0.12, stroke: "none" }));
+    }
+    svg.append(s("path", { d: d, fill: "none", stroke: se.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+    pts.forEach((p, k) => {
+      const lastPoint = k === pts.length - 1;
+      svg.append(s("circle", { cx: x(p.t), cy: y(p.pct), r: lastPoint ? 6 : 4, fill: se.color, stroke: "var(--surface)", "stroke-width": 2 }));
+    });
+    if (pad.r > 20) {
+      const lastP = pts[pts.length - 1];
+      const label = s("text", { x: x(lastP.t) + 10, y: y(lastP.pct) + 4, "font-size": 12, fill: "var(--ink)" });
+      label.textContent = single ? Math.round(lastP.pct) + "%" : se.name.length > 10 ? se.name.slice(0, 9) + "…" : se.name;
+      svg.append(label);
+    }
+  });
+  const cross = s("line", { y1: pad.t, y2: H - pad.b, stroke: "var(--muted)", "stroke-width": 1, "stroke-dasharray": "3 3", visibility: "hidden" });
+  const ring = s("circle", { r: 8, fill: "none", stroke: "var(--ink)", "stroke-width": 2, visibility: "hidden" });
+  svg.append(cross, ring);
+  const tip = h("div", { class: "tooltip", hidden: true });
+  container.replaceChildren(svg, tip);
+
+  function nearest(px, py) {
+    let best = null, bestD = Infinity;
+    series.forEach(se => se.points.forEach(p => {
+      const dx = x(p.t) - px, dy = (y(p.pct) - py) * 0.35;
+      const dist = dx * dx + dy * dy;
+      if (dist < bestD) { bestD = dist; best = { p: p, se: se }; }
+    }));
+    return best;
+  }
+  function move(e) {
+    const box = svg.getBoundingClientRect();
+    const scale = W / box.width;
+    const px = (e.clientX - box.left) * scale, py = (e.clientY - box.top) * scale;
+    const hit = nearest(px, py);
+    if (!hit) return;
+    const cx = x(hit.p.t), cy = y(hit.p.pct);
+    cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("visibility", "visible");
+    ring.setAttribute("cx", cx); ring.setAttribute("cy", cy); ring.setAttribute("visibility", "visible");
+    tip.hidden = false;
+    tip.replaceChildren(h("b", {}, hit.p.row.title || "Score"),
+      h("div", {}, hit.se.name + ": " + hit.p.row.score + " / " + hit.p.row.total + " (" + Math.round(hit.p.pct) + "%)"),
+      h("div", { style: "color: var(--muted)" }, fmtDate(hit.p.row.at)));
+    const left = cx / scale, top = cy / scale;
+    const tw = tip.offsetWidth || 170;
+    tip.style.left = Math.max(0, Math.min(box.width - tw, left - tw / 2)) + "px";
+    tip.style.top = Math.max(0, top - (tip.offsetHeight || 70) - 14) + "px";
+  }
+  function leave() { tip.hidden = true; cross.setAttribute("visibility", "hidden"); ring.setAttribute("visibility", "hidden"); }
+  svg.addEventListener("pointermove", move);
+  svg.addEventListener("pointerdown", move);
+  svg.addEventListener("pointerleave", leave);
+}
+
+function renderScorecard() {
+  const rows = Store.rows();
+  const names = studentNames();
+  if (scoreFilter && names.indexOf(scoreFilter) < 0) scoreFilter = "";
+  const picked = scoreFilter ? rows.filter(r => r.student === scoreFilter) : rows;
+  const graded = picked.filter(r => r.kind !== "challenge" && r.total > 0);
+
+  const badge = h("span", { class: "badge" + (Store.live ? " live" : "") },
+    Store.live ? (Store.canWrite ? "Class database: live" : "Class database: view only, new scores save on this device") : "Saved on this device");
+
+  const filter = h("select", { class: "field", id: "score-filter", "aria-label": "Show scores for", onchange: e => { scoreFilter = e.target.value; local("scoreFilter", scoreFilter); render(); } },
+    h("option", { value: "" }, "All learners"), names.map(n => h("option", { value: n, selected: n === scoreFilter }, n)));
+
+  // add-a-score form
+  const fStudent = h("input", { class: "field", id: "add-student", list: "learner-list", maxlength: "40", required: true, value: scoreFilter || currentStudent || "" });
+  const fTitle = h("input", { class: "field", id: "add-title", maxlength: "80", placeholder: "e.g. Class test: Tables", required: true });
+  const fScore = h("input", { class: "field", id: "add-score", type: "number", inputmode: "decimal", min: "0", step: "any", required: true });
+  const fTotal = h("input", { class: "field", id: "add-total", type: "number", inputmode: "decimal", min: "1", step: "any", value: "10", required: true });
+  const fDate = h("input", { class: "field", id: "add-date", type: "date", value: today(), max: today(), required: true });
+  const addForm = h("form", { class: "card", hidden: true, onsubmit: async e => {
+    e.preventDefault();
+    const score = Number(fScore.value), total = Number(fTotal.value);
+    if (!(total > 0) || score < 0 || score > total) { toast("The score must be between 0 and the total."); fScore.focus(); return; }
+    const when = new Date(fDate.value + "T12:00:00");
+    const where = await Store.add({ student: fStudent.value, kind: "manual", title: fTitle.value, lesson: null, score: score, total: total, at: isNaN(when) ? undefined : when.toISOString() });
+    toast(where === "db" ? "Score added to the class scorecard." : "Score added on this device.");
+    render();
+  } },
+    h("h3", { style: "margin-bottom: 10px" }, "Add a score"),
+    h("div", { class: "form-grid" },
+      h("label", {}, "Learner", fStudent),
+      h("label", {}, "What was it?", fTitle),
+      h("label", {}, "Score", fScore),
+      h("label", {}, "Out of", fTotal),
+      h("label", {}, "Date", fDate)),
+    h("datalist", { id: "learner-list" }, names.map(n => h("option", { value: n }))),
+    h("div", { class: "row", style: "margin-top: 12px" }, h("button", { class: "btn primary big", type: "submit" }, "Save score"),
+      h("button", { class: "btn big", type: "button", onclick: () => { addForm.hidden = true; } }, "Cancel")));
+
+  const header = h("div", { class: "row between" },
+    h("div", {}, h("div", { class: "eyebrow" }, "Your work"), h("h2", {}, "Scorecard")),
+    badge);
+  const controls = h("div", { class: "row" }, filter,
+    h("button", { class: "btn primary big", type: "button", onclick: () => { addForm.hidden = false; fTitle.focus(); } }, "+ Add a score"));
+
+  if (!rows.length) {
+    return [header, controls, addForm, h("div", { class: "card empty" },
+      h("h3", {}, "No scores yet"),
+      h("p", {}, "Finish a lesson quiz or a challenge and it appears here automatically. Teachers can tap Add a score to log class tests."),
+      h("button", { class: "btn primary big", type: "button", onclick: () => go({ kind: "lesson", lesson: 0, stage: "step", step: 0 }) }, "Start Lesson 1"))];
+  }
+
+  // tiles
+  const avg = graded.length ? Math.round(graded.reduce((a, r) => a + r.score / r.total, 0) / graded.length * 100) : null;
+  const lessonsDone = new Set(picked.filter(r => r.kind === "challenge").map(r => r.student + "#" + r.lesson));
+  const latest = graded[graded.length - 1];
+  const firstHalf = graded.slice(0, Math.floor(graded.length / 2)), secondHalf = graded.slice(Math.floor(graded.length / 2));
+  const mean = list => list.reduce((a, r) => a + r.score / r.total, 0) / list.length * 100;
+  const change = graded.length >= 4 ? Math.round(mean(secondHalf) - mean(firstHalf)) : null;
+  const doneLabel = scoreFilter ? lessonsDone.size + " / " + LESSONS.length : String(lessonsDone.size);
+  const tiles = h("div", { class: "tiles" },
+    h("div", { class: "tile" }, h("div", { class: "label" }, "Average score"), h("div", { class: "value" }, avg == null ? "–" : avg + "%"), h("div", { class: "sub" }, graded.length + " quizzes and tests")),
+    h("div", { class: "tile" }, h("div", { class: "label" }, "Trend"), h("div", { class: "value" }, change == null ? "–" : (change > 0 ? "▲ " : change < 0 ? "▼ " : "") + Math.abs(change) + "%"),
+      h("div", { class: "sub" }, change == null ? "Needs 4 or more scores" : "Recent half vs earlier half")),
+    h("div", { class: "tile" }, h("div", { class: "label" }, scoreFilter ? "Lessons finished" : "Challenges passed"), h("div", { class: "value" }, doneLabel), h("div", { class: "sub" }, scoreFilter ? "Challenges passed" : "Across all learners")),
+    h("div", { class: "tile" }, h("div", { class: "label" }, "Latest"), h("div", { class: "value" }, latest ? Math.round(latest.score / latest.total * 100) + "%" : "–"),
+      h("div", { class: "sub" }, latest ? (latest.title || "") : "No scores yet")));
+
+  // chart
+  const chartBox = h("div", { class: "chart-wrap" });
+  const legend = h("div", { class: "legend" });
+  const chartCard = h("div", { class: "card" }, h("h3", {}, "Score trend"), h("p", { class: "tip", style: "margin: 2px 0 10px" }, "Quiz and test scores as a percentage, oldest on the left. Tap or hover a dot for details."), chartBox, legend);
+  const byStudent = new Map();
+  graded.forEach(r => {
+    if (!byStudent.has(r.student)) byStudent.set(r.student, []);
+    byStudent.get(r.student).push({ t: new Date(r.at).getTime(), pct: Math.max(0, Math.min(100, r.score / r.total * 100)), row: r });
+  });
+  let series = Array.from(byStudent.entries()).map(([name, points]) => ({ name: name, color: seriesColor(names.indexOf(name)), points: points.filter(p => !isNaN(p.t)) })).filter(s => s.points.length);
+  let note = null;
+  if (series.length > 8) {
+    series.sort((a, b) => b.points[b.points.length - 1].t - a.points[a.points.length - 1].t);
+    series = series.slice(0, 8);
+    note = h("p", { class: "tip" }, "Showing the 8 most recently active learners. Pick a learner above to see anyone else.");
+  }
+  if (series.length) {
+    if (series.length > 1) legend.replaceChildren(...series.map(se => h("span", {}, h("i", { style: "background:" + se.color }), se.name)));
+    if (note) chartCard.append(note);
+    requestAnimationFrame(() => drawTrend(chartBox, series));
+    if (chartCleanup) chartCleanup();
+    if (window.ResizeObserver) {
+      let lastW = 0;
+      const ro = new ResizeObserver(entries => { const w = Math.round(entries[0].contentRect.width); if (w && Math.abs(w - lastW) > 8) { lastW = w; drawTrend(chartBox, series); } });
+      ro.observe(chartBox); chartCleanup = () => ro.disconnect();
+    }
+  } else {
+    chartBox.append(h("p", { class: "empty" }, "Finish a quiz or add a test score to see the trend."));
+  }
+
+  // table
+  const tableRows = picked.slice().reverse().map(r => {
+    const pct = r.total ? Math.round(r.score / r.total * 100) : 0;
+    const canDel = r.where === "local" || Store.canDelete;
+    const del = canDel ? h("button", { class: "btn small", type: "button", "aria-label": "Delete this score", onclick: e => {
+      const btn = e.currentTarget;
+      if (btn.dataset.armed !== "1") { btn.dataset.armed = "1"; btn.textContent = "Tap to confirm"; setTimeout(() => { if (btn.isConnected) { btn.dataset.armed = ""; btn.textContent = "Delete"; } }, 3000); return; }
+      Store.remove(r).then(() => toast("Score deleted."), () => toast("Could not delete. You may not have permission."));
+    } }, "Delete") : "";
+    return h("tr", {},
+      h("td", { class: "c-date" }, fmtDate(r.at)),
+      h("td", { class: "c-who" }, r.student),
+      h("td", { class: "c-what" }, r.title || "", " ", h("span", { class: "kind" }, r.kind === "quiz" ? "Quiz" : r.kind === "challenge" ? "Challenge" : "Test"), r.where === "local" && Store.live ? h("span", { class: "kind", style: "margin-left: 4px" }, "this device") : ""),
+      h("td", { class: "num c-score" }, r.kind === "challenge" ? "Passed" : r.score + " / " + r.total),
+      h("td", { class: "num c-pct" }, r.kind === "challenge" ? "" : pct + "%"),
+      h("td", { class: "c-del" }, del));
+  });
+  const table = h("div", { class: "table-wrap" }, h("table", { class: "log" },
+    h("caption", { hidden: true }, "All logged scores, newest first"),
+    h("thead", {}, h("tr", {}, h("th", {}, "Date"), h("th", {}, "Learner"), h("th", {}, "What"), h("th", { style: "text-align:right" }, "Score"), h("th", { style: "text-align:right" }, "%"), h("th", {}, h("span", { hidden: true }, "Actions")))),
+    h("tbody", {}, tableRows)));
+
+  return [header, controls, addForm, tiles, chartCard, h("h3", {}, "All scores"), table];
+}
+
+function render() {
+  if (chartCleanup) { chartCleanup(); chartCleanup = null; }
+  renderNav();
+  let parts;
+  if (view.kind === "scorecard") parts = renderScorecard();
+  else if (view.kind === "sandbox") parts = renderSandbox();
+  else if (view.kind === "learner") parts = renderLearner();
+  else if (view.stage === "quiz") parts = renderQuiz(view.lesson);
+  else if (view.stage === "challenge") parts = renderChallenge(view.lesson);
+  else parts = renderStep(view.lesson, Math.min(view.step || 0, LESSONS[view.lesson].steps.length - 1));
+  document.getElementById("main").replaceChildren(h("div", { class: "page" }, parts));
+}
+
+// Re-render the scorecard and lesson ticks when scores change, without
+// rebuilding a lesson page the student is typing in.
+Store.listeners.push(() => {
+  renderWho();
+  if (view.kind === "scorecard") render(); else renderNav();
+});
+window.addEventListener("hashchange", () => { if (location.hash === "#scorecard") go({ kind: "scorecard" }); });
+
+renderWho();
+render();
+Store.connect();
+</script>
+</body>
+</html>
