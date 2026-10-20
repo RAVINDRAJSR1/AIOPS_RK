@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Aptitude">
+<title>Aptitude Playground</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1d2433;--mute:#667085;--pri:#3b5bdb;--ok:#2b8a3e;--bad:#c92a2a;--line:#e3e6ee}
+@media (prefers-color-scheme:dark){:root{--bg:#12151c;--card:#1c212b;--ink:#e8ebf2;--mute:#98a2b3;--pri:#748ffc;--ok:#51cf66;--bad:#ff6b6b;--line:#2c3340}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,system-ui,sans-serif;padding:env(safe-area-inset-top) 16px 32px}
+main{max-width:900px;margin:auto}
+header{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
+h1{font-size:1.3rem;margin:0}h2{font-size:1.1rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0}
+button,input,select{font:inherit;border-radius:10px;border:1px solid var(--line);padding:12px 14px;min-height:44px;background:var(--card);color:var(--ink)}
+button{cursor:pointer}.pri{background:var(--pri);color:#fff;border:0}
+input{width:100%;margin:6px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.topic{text-align:left;display:flex;flex-direction:column;gap:4px}
+.tag{font-size:.75rem;color:var(--mute)}.old{color:var(--pri)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.opts button.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 18%,var(--card))}
+.opts button.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 18%,var(--card))}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mute{color:var(--mute)}table{border-collapse:collapse;margin:8px 0}td,th{border:1px solid var(--line);padding:4px 10px;text-align:right}
+svg{max-width:100%;height:auto}.hide{display:none}
+@media (max-width:480px){.opts{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header><h1>Aptitude Playground</h1><div id="who" class="row"></div></header>
+
+<section id="login" class="card">
+  <h2>Sign in or create a profile</h2>
+  <p class="mute">Profiles and scores are saved on this device.</p>
+  <input id="u" placeholder="Name" autocomplete="username">
+  <input id="p" type="password" placeholder="PIN / password" autocomplete="current-password">
+  <div class="row"><button class="pri" onclick="login()">Sign in</button><button onclick="login(1)">Create profile</button></div>
+  <p id="lmsg" class="mute"></p>
+</section>
+
+<section id="home" class="hide">
+  <div class="card">
+    <div class="row">
+      <select id="filter" onchange="drawTopics()"><option value="all">All topics</option><option value="new">New topics</option><option value="old">Old (ticked) topics</option></select>
+      <select id="count"><option>5</option><option selected>10</option><option>20</option></select>
+      <button class="pri" onclick="startMix('new')">Mixed: new</button>
+      <button onclick="startMix('old')">Mixed: old</button>
+    </div>
+  </div>
+  <div id="topics" class="grid"></div>
+  <div class="card"><h2>Score trend</h2><select id="trendSel" onchange="drawTrend()"></select><div id="trend"></div><div id="weak" class="mute"></div></div>
+</section>
+
+<section id="quiz" class="card hide">
+  <div class="row" style="justify-content:space-between"><b id="qt"></b><span id="qn" class="mute"></span></div>
+  <div id="qv"></div><p id="qq" style="font-size:1.1rem"></p>
+  <div id="qo" class="opts"></div>
+  <p id="qf"></p>
+  <div class="row"><button id="next" class="pri hide" onclick="next()">Next</button><button onclick="show('home')">Quit</button></div>
+</section>
+</main>
+<script>
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1)),P=a=>a[R(0,a.length-1)],G=(a,b)=>b?G(b,a%b):a;
+const frac=(n,d)=>{const g=G(n,d);return d/g==1?''+n/g:`${n/g}/${d/g}`};
+const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const fact=n=>n<2?1:n*fact(n-1);
+// Ticked in the book's contents = "old" (already covered)
+const OLD=[6,12,16,28,30,31,32];
+const bars=(lab,v,unit)=>{const m=Math.max(...v),w=60;return `<svg viewBox="0 0 ${v.length*w+20} 170">${v.map((x,i)=>`<rect x="${i*w+20}" y="${150-x/m*130}" width="40" height="${x/m*130}" fill="var(--pri)"/><text x="${i*w+40}" y="${145-x/m*130}" font-size="11" text-anchor="middle" fill="currentColor">${x}</text><text x="${i*w+40}" y="165" font-size="11" text-anchor="middle" fill="currentColor">${lab[i]}</text>`).join('')}</svg><div class="mute">${unit}</div>`};
+const line=(lab,v,unit)=>{const m=Math.max(...v),w=60,pts=v.map((x,i)=>`${i*w+40},${150-x/m*130}`);return `<svg viewBox="0 0 ${v.length*w+20} 170"><polyline points="${pts.join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2"/>${v.map((x,i)=>`<circle cx="${i*w+40}" cy="${150-x/m*130}" r="4" fill="var(--pri)"/><text x="${i*w+40}" y="${142-x/m*130}" font-size="11" text-anchor="middle" fill="currentColor">${x}</text><text x="${i*w+40}" y="165" font-size="11" text-anchor="middle" fill="currentColor">${lab[i]}</text>`).join('')}</svg><div class="mute">${unit}</div>`};
+const YRS=['2019','2020','2021','2022','2023'];
+const diQ=v=>{const t=v.reduce((a,b)=>a+b),i=R(1,4),k=R(0,2);
+  if(k==0)return{q:'Total over all years?',a:t};
+  if(k==1)return{q:'Average per year?',a:+(t/5).toFixed(1)};
+  return{q:`Percent change from ${YRS[i-1]} to ${YRS[i]} (1 decimal)?`,a:+((v[i]-v[i-1])/v[i-1]*100).toFixed(1)}};
+// Each topic: name + generator returning {q, a, opts?, v?(visual html), h?(hint)}
+const T=[
+['Numbers',()=>{const b=R(2,9),n=R(10,99);return{q:`Unit digit of ${b}^${n}?`,a:Number(BigInt(b)**BigInt(n)%10n),h:'Unit digits repeat in cycles of 4.'}}],
+['H.C.F. & L.C.M.',()=>{const g=R(2,12),x=R(2,9),y=P([...Array(9)].map((_,i)=>i+2).filter(z=>G(z,x)==1));return R(0,1)?{q:`HCF of ${g*x} and ${g*y}?`,a:g}:{q:`LCM of ${g*x} and ${g*y}?`,a:g*x*y,h:'HCF × LCM = product of the numbers.'}}],
+['Decimal Fractions',()=>{const x=R(11,99),y=R(11,99);return{q:`${x/10} × ${y/10} = ?`,a:+(x*y/100).toFixed(2)}}],
+['Simplification',()=>{const a=R(10,50),b=R(2,12),c=R(2,12),d=R(1,20);return{q:`${a} + ${b} × ${c} − ${d} = ?`,a:a+b*c-d,h:'BODMAS: multiply before add/subtract.'}}],
+['Square Roots & Cube Roots',()=>{const n=R(11,40),c=R(2,15);return R(0,1)?{q:`√${n*n} = ?`,a:n}:{q:`∛${c**3} = ?`,a:c}}],
+['Average',()=>{const m=R(20,80),d=[R(1,9),R(1,9)],v=[m-d[0],m+d[0],m-d[1],m+d[1],m];v.sort(()=>Math.random()-.5);return{q:`Average of ${v.join(', ')}?`,a:m}}],
+['Problems on Numbers',()=>{const x=R(20,90),y=R(5,x-1);return{q:`Sum of two numbers is ${x+y}, difference is ${x-y}. Larger number?`,a:x,h:'Larger = (sum + difference) / 2'}}],
+['Problems on Ages',()=>{const b=R(5,40),k=R(2,20);return{q:`A is ${k} years older than B. Sum of their ages is ${2*b+k}. A's age?`,a:b+k}}],
+['Surds & Indices',()=>{const a=R(2,9),b=R(2,9),c=R(1,9);return{q:`2^${a} × 2^${b} ÷ 2^${c} = 2^?`,a:a+b-c,h:'Add powers when multiplying, subtract when dividing.'}}],
+['Percentage',()=>{const p=P([5,10,12,15,20,25,30,40,75]),n=R(2,40)*20;return{q:`${p}% of ${n} = ?`,a:p*n/100}}],
+['Profit & Loss',()=>{const cp=R(2,50)*20,p=P([5,10,15,20,25]);return R(0,1)?{q:`CP = ₹${cp}, profit ${p}%. SP?`,a:cp*(100+p)/100}:{q:`CP = ₹${cp}, loss ${p}%. SP?`,a:cp*(100-p)/100,h:'SP = CP × (100 ± %)/100'}}],
+['Ratio & Proportion',()=>{const a=R(1,7),b=R(1,7),k=R(5,50);return{q:`Divide ₹${(a+b)*k} in ratio ${a}:${b}. First share?`,a:a*k}}],
+['Partnership',()=>{const x=R(2,9)*1000,y=R(2,9)*1000,m1=R(3,12),m2=R(3,12),s=x*m1+y*m2,g=G(x*m1,s),k=R(1,5);return{q:`A invests ₹${x} for ${m1} months, B invests ₹${y} for ${m2} months. Profit ₹${k*s/g}. A's share?`,a:k*x*m1/g,h:'Share ∝ capital × time'}}],
+['Chain Rule',()=>{const a=R(2,20),n=R(2,12),t=a*n,ds=[...Array(t)].map((_,i)=>i+1).filter(x=>t%x==0&&x!=n&&x!=t),m=P(ds.length?ds:[1]);return{q:`${m} men finish a job in ${t/m} days. How many days for ${n} men?`,a,h:'Men × days is constant.'}}],
+['Time & Work',()=>{const[a,b,c]=P([[12,24,8],[10,15,6],[20,30,12],[6,12,4],[12,4,3],[18,9,6],[30,20,12]]);return{q:`A finishes a work in ${a} days, B in ${b} days. Together?`,a:c,h:'Together = ab/(a+b)'}}],
+['Pipes & Cisterns',()=>{const[a,b,c]=P([[3,6,6],[4,12,6],[6,12,12],[10,15,30],[12,20,30],[8,24,12]]);return{q:`Pipe A fills a tank in ${a} h, pipe B empties it in ${b} h. Both open: hours to fill?`,a:c,h:'Net = ab/(b−a)'}}],
+['Time & Distance',()=>{const k=R(1,8);return R(0,1)?{q:`${18*k} km/h = ? m/s`,a:5*k,h:'× 5/18'}:{q:`Speed ${k*10} km/h for ${k+1} hours. Distance (km)?`,a:k*10*(k+1)}}],
+['Problems on Trains',()=>{const v=P([36,54,72,90,108]),t=R(5,20),s=v*5/18;return{q:`A train at ${v} km/h crosses a pole in ${t} s. Length (m)?`,a:s*t}}],
+['Boats & Streams',()=>{const b=R(6,20),s=R(1,5);return R(0,1)?{q:`Downstream ${b+s} km/h, upstream ${b-s} km/h. Boat speed in still water?`,a:b}:{q:`Downstream ${b+s} km/h, upstream ${b-s} km/h. Stream speed?`,a:s,h:'Stream = (down − up)/2'}}],
+['Alligation or Mixture',()=>{const a=R(10,30),c=a+R(5,20),m=R(a+1,c-1);const ans=frac(c-m,m-a).replace('/',':');return{q:`Rice at ₹${a}/kg and ₹${c}/kg mixed to get ₹${m}/kg. Ratio (cheap:dear)?`,a:ans.includes(':')?ans:ans+':1',str:1,h:'(dear − mean):(mean − cheap)'}}],
+['Simple Interest',()=>{const p=R(2,50)*100,r=R(2,15),t=R(1,5);return{q:`SI on ₹${p} at ${r}% p.a. for ${t} years?`,a:p*r*t/100}}],
+['Compound Interest',()=>{const p=R(10,100)*100,r=P([10,20]);return{q:`CI on ₹${p} at ${r}% p.a. for 2 years?`,a:Math.round(p*((1+r/100)**2-1)),h:'P[(1+R/100)^n − 1]'}}],
+['Logarithms',()=>{const b=P([2,3,5,10]),k=R(1,b==2?10:4);return{q:`log${b}(${b**k}) = ?`,a:k}}],
+['Area',()=>{const l=R(5,40),b=R(3,30),r=R(1,5)*7;return R(0,1)?{q:`Rectangle ${l} m × ${b} m. Area (m²)?`,a:l*b}:{q:`Circle radius ${r} cm. Area (cm², π=22/7)?`,a:22*r*r/7}}],
+['Volume & Surface Areas',()=>{const a=R(2,15);return R(0,1)?{q:`Cube edge ${a} cm. Volume?`,a:a**3}:{q:`Cube edge ${a} cm. Total surface area?`,a:6*a*a}}],
+['Races & Games of Skill',()=>{const b=R(5,9),a=b+R(1,3),L=a*R(5,20)*10/G(a,10);return{q:`Speeds of A:B = ${a}:${b}. In a ${L} m race, A wins by how many metres?`,a:L*(a-b)/a}}],
+['Calendar',()=>{const d=new Date(R(1950,2030),R(0,11),R(1,28)),a=DAYS[d.getDay()];return{q:`Day of the week on ${d.toDateString().slice(4)}?`,a,opts:[...new Set([a,...DAYS.filter(x=>x!=a).sort(()=>Math.random()-.5).slice(0,3)])],h:'Count odd days.'}}],
+['Clocks',()=>{const h=R(1,12),m=R(0,29)*2;let a=Math.abs(30*h-5.5*m);a=Math.min(a,360-a);return{q:`Angle between the hands at ${h}:${String(m).padStart(2,'0')}?`,a,h:'|30H − 5.5M|'}}],
+['Stocks & Shares',()=>{const p=P([80,90,96,110,120,125]),r=P([4,5,6,8,10]),x=p*R(5,50)*10;return{q:`Annual income from investing ₹${x} in ${r}% stock at ₹${p}?`,a:x*r/p,h:'Income = investment × rate / price'}}],
+['Permutations & Combinations',()=>{const n=R(4,9),r=R(2,Math.min(4,n));return R(0,1)?{q:`${n}P${r} = ?`,a:fact(n)/fact(n-r)}:{q:`${n}C${r} = ?`,a:fact(n)/fact(r)/fact(n-r)}}],
+['Probability',()=>{if(R(0,1)){const s=R(2,12),w=6-Math.abs(7-s);return{q:`Two dice are thrown. P(sum = ${s})?`,a:frac(w,36),str:1}}const n=R(2,4),k=R(0,n);return{q:`${n} coins tossed. P(exactly ${k} heads)?`,a:frac(fact(n)/fact(k)/fact(n-k),2**n),str:1}}],
+['True Discount',()=>{const pw=R(5,50)*100,r=P([5,10,12,15]),t=P([1,2]);return{q:`Present worth ₹${pw}, ${r}% p.a., ${t} yr. True discount?`,a:pw*r*t/100,h:'TD = SI on present worth'}}],
+['Banker\'s Discount',()=>{const a=R(5,50)*100,r=P([5,10,12,15]),t=P([1,2]);return{q:`Bill of ₹${a} due in ${t} yr at ${r}%. Banker's discount?`,a:a*r*t/100,h:'BD = SI on face value'}}],
+['Heights & Distances',()=>{const d=R(5,50)*2;const k=R(0,2);if(k==0)return{q:`Angle of elevation of a tower top is 45° from ${d} m away. Height (m)?`,a:d};if(k==1)return{q:`Angle of elevation is 60° from ${d} m away. Height?`,a:`${d}√3`,opts:[`${d}√3`,`${d}/√3`,`${2*d}`,`${d}√2`],str:1};return{q:`Angle of elevation is 30° from ${d}√3 m away. Height (m)?`,a:d}}],
+['Odd Man Out & Series',()=>{const a=R(1,9);if(R(0,1)){const d=R(2,9),s=[0,1,2,3,4].map(i=>a+i*d);return{q:`Next term: ${s.join(', ')}, ?`,a:a+5*d}}const r=R(2,3),s=[0,1,2,3].map(i=>a*r**i);return{q:`Next term: ${s.join(', ')}, ?`,a:a*r**4}}],
+['Tabulation',()=>{const v=YRS.map(()=>R(10,90)*10);return{v:`<table><tr><th>Year</th>${YRS.map(y=>`<th>${y}</th>`).join('')}</tr><tr><th>Sales (₹ lakh)</th>${v.map(x=>`<td>${x}</td>`).join('')}</tr></table>`,...diQ(v)}}],
+['Bar Graphs',()=>{const v=YRS.map(()=>R(10,90)*10);return{v:bars(YRS,v,'Production (tonnes)'),...diQ(v)}}],
+['Pie Charts',()=>{const c=['Food','Rent','Travel','Education','Others'],p=[R(15,30),R(15,25),R(5,15),R(10,20)];p.push(100-p.reduce((a,b)=>a+b));const tot=R(2,10)*10000,i=R(0,4);let o=0;const arcs=p.map((x,j)=>{const a0=o/100*2*Math.PI,a1=(o+=x)/100*2*Math.PI,L=x>50?1:0;return`<path d="M80,80 L${80+70*Math.sin(a0)},${80-70*Math.cos(a0)} A70,70 0 ${L} 1 ${80+70*Math.sin(a1)},${80-70*Math.cos(a1)}Z" fill="hsl(${j*70},55%,55%)"/>`}).join('');return{v:`<svg viewBox="0 0 320 160">${arcs}${c.map((n,j)=>`<rect x="170" y="${15+j*25}" width="12" height="12" fill="hsl(${j*70},55%,55%)"/><text x="188" y="${26+j*25}" font-size="12" fill="currentColor">${n} ${p[j]}%</text>`).join('')}</svg>`,q:`Monthly spend is ₹${tot}. Amount on ${c[i]}?`,a:tot*p[i]/100}}],
+['Line Graphs',()=>{const v=YRS.map(()=>R(10,90)*10);return{v:line(YRS,v,'Exports (₹ crore)'),...diQ(v)}}]
+];
+// ---- storage & login (device-local; password stored as SHA-256 hash) ----
+const DB='aptPlay',load=()=>{try{return JSON.parse(localStorage.getItem(DB))||{}}catch(e){return{}}},save=d=>{try{localStorage.setItem(DB,JSON.stringify(d))}catch(e){}};
+let db=load(),me=null,quiz=null;
+async function hash(s){if(crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))|0;return'x'+h}
+async function login(create){const u=$('u').value.trim().toLowerCase(),p=$('p').value;if(!u||!p)return msg('Enter a name and PIN.');const h=await hash(u+':'+p);
+  if(create){if(db[u])return msg('That name exists — sign in instead.');db[u]={h,hist:[]};save(db)}
+  else if(!db[u]||db[u].h!=h)return msg('Wrong name or PIN.');
+  me=u;try{sessionStorage.setItem('aptMe',u)}catch(e){}enter()}
+const $=id=>document.getElementById(id),msg=t=>$('lmsg').textContent=t;
+function logout(){me=null;try{sessionStorage.removeItem('aptMe')}catch(e){}$('who').innerHTML='';show('login')}
+function show(s){['login','home','quiz'].forEach(x=>$(x).classList.toggle('hide',x!=s));if(s=='home'){drawTopics();drawTrend()}}
+function enter(){$('who').innerHTML=`<span class="mute">${me}</span><button onclick="logout()">Sign out</button>`;
+  $('trendSel').innerHTML='<option value="-1">All quizzes</option>'+T.map((t,i)=>`<option value="${i}">${i+1}. ${t[0]}</option>`).join('');show('home')}
+function stats(i){const h=db[me].hist.filter(x=>x.t.includes(i));return h.length?Math.round(h.reduce((a,x)=>a+x.s/x.n,0)/h.length*100)+'% avg · '+h.length+' quiz':'Not tried'}
+function drawTopics(){const f=$('filter').value;$('topics').innerHTML=T.map((t,i)=>{const old=OLD.includes(i+1);if(f=='old'&&!old||f=='new'&&old)return'';
+  return`<button class="topic card" onclick="start([${i}])"><b>${i+1}. ${t[0]}</b><span class="tag ${old?'old':''}">${old?'Old ✓':'New'} · ${i<35?'Arithmetic':'Data Interpretation'}</span><span class="tag">${stats(i)}</span></button>`}).join('')}
+function startMix(k){start(T.map((_,i)=>i).filter(i=>OLD.includes(i+1)==(k=='old')))}
+// ---- quiz ----
+function mk(i){const g=T[i][1]();let o=g.opts;if(!o){if(g.str){const set=new Set([g.a]);const alt=[...Array(8)].map(()=>T[i][1]().a);for(const x of alt){if(set.size>3)break;set.add(x)}o=[...set]}
+  else{const I=Number.isInteger(g.a),s=new Set([g.a]),st=I?Math.max(1,Math.round(Math.abs(g.a)*.1)):Math.max(.1,+(Math.abs(g.a)*.1).toFixed(1));let k=1;while(s.size<4){const x=+(g.a+P([-1,1])*st*k).toFixed(I?0:2);if(x!==g.a)s.add(x);k++}o=[...s]}}
+  return{...g,i,o:o.sort(()=>Math.random()-.5)}}
+function start(ts){const n=+$('count').value;quiz={ts,qs:[...Array(n)].map(()=>mk(P(ts))),k:0,s:0,t0:Date.now()};show('quiz');render()}
+function render(){const q=quiz.qs[quiz.k];$('qt').textContent=`${q.i+1}. ${T[q.i][0]}`;$('qn').textContent=`Q ${quiz.k+1}/${quiz.qs.length} · Score ${quiz.s}`;
+  $('qv').innerHTML=q.v||'';$('qq').textContent=q.q;$('qf').textContent='';$('next').classList.add('hide');
+  $('qo').innerHTML=q.o.map((x,j)=>`<button onclick="pick(${j},this)">${x}</button>`).join('')}
+function pick(j,b){const q=quiz.qs[quiz.k],ok=q.o[j]===q.a;[...$('qo').children].forEach((c,k)=>{c.disabled=true;if(q.o[k]===q.a)c.classList.add('ok')});
+  if(ok)quiz.s++;else b.classList.add('bad');q.ok=ok;$('qf').textContent=ok?'Correct!':`Answer: ${q.a}${q.h?' — '+q.h:''}`;$('next').classList.remove('hide');$('next').textContent=quiz.k+1<quiz.qs.length?'Next':'Finish'}
+function next(){if(++quiz.k<quiz.qs.length)return render();
+  db[me].hist.push({d:Date.now(),t:[...new Set(quiz.qs.map(q=>q.i))],s:quiz.s,n:quiz.qs.length,sec:Math.round((Date.now()-quiz.t0)/1000),per:quiz.qs.map(q=>[q.i,q.ok?1:0])});save(db);
+  alert(`Score: ${quiz.s}/${quiz.qs.length}`);show('home')}
+// ---- trends ----
+function drawTrend(){if(!me)return;const sel=+$('trendSel').value,h=db[me].hist.filter(x=>sel<0||x.t.includes(sel)).slice(-20);
+  if(!h.length){$('trend').innerHTML='<p class="mute">No quizzes yet.</p>'}else{const W=600,H=180,x=i=>40+i*(W-60)/Math.max(1,h.length-1),y=v=>H-25-v*(H-45);
+  const pct=h.map(e=>sel<0?e.s/e.n:(()=>{const p=e.per.filter(z=>z[0]==sel);return p.reduce((a,z)=>a+z[1],0)/p.length})());
+  $('trend').innerHTML=`<svg viewBox="0 0 ${W} ${H}">${[0,.5,1].map(v=>`<line x1="40" x2="${W-20}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="5" y="${y(v)+4}" font-size="11" fill="currentColor">${v*100}%</text>`).join('')}
+  <polyline points="${pct.map((v,i)=>x(i)+','+y(v)).join(' ')}" fill="none" stroke="var(--pri)" stroke-width="2.5"/>${pct.map((v,i)=>`<circle cx="${x(i)}" cy="${y(v)}" r="4" fill="var(--pri)"><title>${new Date(h[i].d).toLocaleString()} · ${Math.round(v*100)}% · ${h[i].sec}s</title></circle>`).join('')}</svg>`}
+  const acc={};db[me].hist.forEach(e=>e.per.forEach(([i,o])=>{acc[i]=acc[i]||[0,0];acc[i][0]+=o;acc[i][1]++}));
+  const w=Object.entries(acc).filter(e=>e[1][1]>=3).map(([i,[a,n]])=>[+i,a/n]).sort((a,b)=>a[1]-b[1]).slice(0,3);
+  $('weak').innerHTML=w.length?'Focus next: '+w.map(([i,v])=>`<b>${T[i][0]}</b> (${Math.round(v*100)}%)`).join(', '):''}
+try{const s=sessionStorage.getItem('aptMe');if(s&&db[s]){me=s;enter()}}catch(e){}
+</script>
+</body>
+</html>
