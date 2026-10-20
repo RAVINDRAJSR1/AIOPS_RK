@@ -1,0 +1,11 @@
+{
+  "name": "IndiKids Child",
+  "short_name": "IndiKids Child",
+  "description": "Companion app for IndiKids, installed by a parent on the child's phone.",
+  "start_url": "child.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5fb",
+  "theme_color": "#ff8a00",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

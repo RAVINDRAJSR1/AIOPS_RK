@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3b4cca">
+  <title>IndiKids – Parental Control</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="icon.svg">
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <div class="logo" aria-hidden="true">🛡️</div>
+      <h1>IndiKids</h1>
+      <p class="muted">Peace of mind about your child's screen time and safety.</p>
+    </section>
+
+    <section class="card stack" id="features">
+      <div class="feature"><div class="app-icon">⏳</div><div><h3>Screen Time Limits</h3><p class="muted small">Daily limits that lock non-essential apps once reached.</p></div></div>
+      <div class="feature"><div class="app-icon">🌙</div><div><h3>Scheduled Downtime</h3><p class="muted small">Bedtime and study hours when selected apps are blocked.</p></div></div>
+      <div class="feature"><div class="app-icon">📍</div><div><h3>Real-Time Location</h3><p class="muted small">See where your child's phone is on a map.</p></div></div>
+      <div class="feature"><div class="app-icon">📊</div><div><h3>App Usage Reports</h3><p class="muted small">Time spent in each app, today and this week.</p></div></div>
+    </section>
+
+    <section class="card" id="start">
+      <h2>Who is using this phone?</h2>
+      <div class="stack">
+        <button class="btn block" id="parent-btn">👩 I'm a Parent – set up IndiKids</button>
+        <a class="btn block ghost" id="child-btn" href="child.html">🧒 This is my child's phone – IndiKids Child</a>
+        <a class="btn block accent" href="demo.html">▶ Try the demo (no sign-up)</a>
+      </div>
+    </section>
+
+    <section class="card hidden" id="signup">
+      <h2>Create your parent account</h2>
+      <form id="signup-form">
+        <label class="field">Your name
+          <input type="text" id="parent-name" maxlength="40" autocomplete="given-name" required>
+        </label>
+        <label class="check"><input type="checkbox" id="terms" required>
+          <span>I am of legal age and I agree to the <a href="terms.html" target="_blank">Terms of Use</a>.</span>
+        </label>
+        <button class="btn block" id="get-started" type="submit">Get Started</button>
+        <p class="muted small" style="margin-top:10px">Includes a free trial. No payment is taken in this version.</p>
+      </form>
+    </section>
+
+    <p class="muted small" style="text-align:center">
+      <a href="terms.html">Terms of Use</a> · © IndiKids Technologies Pvt. Ltd.
+    </p>
+  </main>
+
+  <script src="core.js"></script>
+  <script src="store.js"></script>
+  <script src="api.js"></script>
+  <script>
+    IK.demoBadge();
+    document.getElementById('child-btn').href = IK.link('child.html');
+    if (IK.token.get('parent')) {
+      IK.backend.family(IK.token.get('parent')).then(() => location.replace(IK.link('parent.html'))).catch(() => IK.token.set('parent', null));
+    }
+    document.getElementById('parent-btn').onclick = () => {
+      document.getElementById('signup').classList.remove('hidden');
+      document.getElementById('parent-name').focus();
+    };
+    document.getElementById('signup-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('get-started');
+      btn.disabled = true;
+      try {
+        const res = await IK.backend.createFamily({
+          parentName: document.getElementById('parent-name').value,
+          acceptedTerms: document.getElementById('terms').checked,
+        });
+        IK.token.set('parent', res.token);
+        location.href = IK.link('parent.html');
+      } catch (err) {
+        IK.toast(err.message, 'bad');
+        btn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>

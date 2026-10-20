@@ -25,3 +25,11 @@ scorecard that shows each student's trend. Works on phones and iPads too.
 
 **Quick start:** open `html_class6_7_playground/index.html` in any browser.
 Full guide: [html_class6_7_playground/README.md](html_class6_7_playground/README.md)
+
+## 🛡️ IndiKids – Parental Control
+
+A Kids360-style app for parents: screen time limits, scheduled downtime, live location, app usage reports,
+"ask for more time" and SOS. It has a parent app (**IndiKids**) and a child app (**IndiKids Child**).
+
+**Quick start:** `cd indikids && node server.js`, then open <http://localhost:8080/demo.html> to try both phones side by side.
+Full guide: [indikids/README.md](indikids/README.md)

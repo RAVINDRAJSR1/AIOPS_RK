@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#3b4cca">
+  <title>IndiKids – Parent</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="icon.svg">
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand"><span class="logo" aria-hidden="true">🛡️</span>IndiKids</div>
+      <select id="child-select" aria-label="Choose child" class="hidden" style="width:auto;margin:0"></select>
+    </header>
+    <div id="banner"></div>
+    <div id="view" aria-live="polite"></div>
+  </main>
+
+  <nav class="tabs" aria-label="Sections">
+    <div class="tabs-inner" role="tablist">
+      <button role="tab" data-tab="home"><span class="ic">🏠</span>Home</button>
+      <button role="tab" data-tab="limits"><span class="ic">⏳</span>Limits</button>
+      <button role="tab" data-tab="schedule"><span class="ic">🌙</span>Downtime</button>
+      <button role="tab" data-tab="location"><span class="ic">📍</span>Location</button>
+      <button role="tab" data-tab="reports"><span class="ic">📊</span>Reports</button>
+      <button role="tab" data-tab="settings"><span class="ic">⚙️</span>Settings</button>
+    </div>
+  </nav>
+
+  <dialog id="dt-dialog">
+    <form id="dt-form" method="dialog">
+      <h2 id="dt-title">Downtime</h2>
+      <label class="field">Name <input type="text" id="dt-label" maxlength="40" required></label>
+      <div class="grid2">
+        <label class="field">Starts <input type="time" id="dt-start" required></label>
+        <label class="field">Ends <input type="time" id="dt-end" required></label>
+      </div>
+      <div class="field">Days<div class="days" id="dt-days"></div></div>
+      <div class="row between" style="margin-top:14px">
+        <button class="btn outline" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn" value="save" id="dt-save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm-dialog">
+    <form method="dialog">
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-text" class="muted"></p>
+      <div class="row between">
+        <button class="btn outline" value="no">Cancel</button>
+        <button class="btn danger" value="yes" id="confirm-yes">Confirm</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="core.js"></script>
+  <script src="store.js"></script>
+  <script src="api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = IKCore;
+    const { esc, toast, backend } = IK;
+    const $ = (s, el) => (el || document).querySelector(s);
+    const view = $('#view');
+    const token = IK.token.get('parent');
+    let fam = null;
+    let selectedId = null;
+    let tab = 'home';
+    let reportRange = 'today';
+    let pairCode = null;
+
+    IK.demoBadge();
+    if (!token) {
+      location.replace(IK.link('index.html'));
+      return;
+    }
+
+    const child = () => (fam && selectedId ? fam.children[selectedId] : null);
+    const children = () => Object.values(fam ? fam.children : {}).sort((a, b) => a.pairedAt - b.pairedAt);
+    const today = () => C.dayKey(IK.now());
+    const isOnline = (c) => Date.now() - c.lastSeen < (IK.isDemo ? 15000 : 120000);
+
+    function confirmBox(title, textMsg, yesLabel) {
+      return new Promise((resolve) => {
+        const d = $('#confirm-dialog');
+        $('#confirm-title').textContent = title;
+        $('#confirm-text').textContent = textMsg;
+        $('#confirm-yes').textContent = yesLabel || 'Confirm';
+        d.returnValue = '';
+        d.onclose = () => resolve(d.returnValue === 'yes');
+        d.showModal();
+      });
+    }
+
+    async function load() {
+      try {
+        fam = await backend.family(token);
+      } catch (err) {
+        if (err.status === 401) {
+          IK.token.set('parent', null);
+          location.replace(IK.link('index.html'));
+        }
+        return false;
+      }
+      const ids = Object.keys(fam.children);
+      if (!ids.includes(selectedId)) selectedId = children()[0] ? children()[0].id : null;
+      renderChildSelect();
+      renderBanner();
+      return true;
+    }
+
+    function renderChildSelect() {
+      const sel = $('#child-select');
+      const list = children();
+      sel.classList.toggle('hidden', list.length < 2);
+      sel.innerHTML = list.map((c) => `<option value="${c.id}" ${c.id === selectedId ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+    }
+
+    function renderBanner() {
+      let html = '';
+      if (fam.plan === 'trial' && fam.trialActive) {
+        const days = Math.max(1, Math.ceil((fam.trialEndsAt - Date.now()) / 864e5));
+        html = `<div class="alert warn small">Free trial: ${days} day${days > 1 ? 's' : ''} left. <a href="#" data-go="settings">Manage plan</a></div>`;
+      } else if (!fam.premiumActive) {
+        html = `<div class="alert bad small">Your ${fam.plan === 'cancelled' ? 'subscription was cancelled' : 'free trial has ended'}. Existing rules keep working, but changing them needs an active plan. <a href="#" data-go="settings">Manage plan</a></div>`;
+      }
+      $('#banner').innerHTML = html;
+    }
+
+    function canEdit() {
+      if (fam.premiumActive) return true;
+      toast('Activate a plan in Settings to change rules', 'bad');
+      return false;
+    }
+
+    function setTab(t) {
+      tab = t;
+      document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+      render();
+      window.scrollTo(0, 0);
+    }
+
+    function render() {
+      if (!fam) return;
+      if (!child() && tab !== 'settings') return renderNoChild();
+      ({ home: renderHome, limits: renderLimits, schedule: renderSchedule, location: renderLocation, reports: renderReports, settings: renderSettings })[tab]();
+    }
+
+    function renderNoChild() {
+      view.innerHTML = `
+        <section class="card">
+          <h2>Welcome, ${esc(fam.parentName)} 👋</h2>
+          <p>Connect your child's phone to start.</p>
+          <ol class="small">
+            <li>On your child's phone, open <strong>${esc(location.origin + location.pathname.replace(/parent\.html$/, 'child.html'))}</strong> and add it to the home screen as <em>IndiKids Child</em>.</li>
+            <li>Tap the button below to get a pairing code.</li>
+            <li>Enter the code on your child's phone and allow the permissions it asks for.</li>
+          </ol>
+          ${pairCodeHtml()}
+        </section>`;
+      bindPairButton();
+    }
+
+    function pairCodeHtml() {
+      if (pairCode && pairCode.expiresAt > Date.now()) {
+        const mins = Math.ceil((pairCode.expiresAt - Date.now()) / 60000);
+        return `<div class="card" style="text-align:center;background:var(--primary-soft)">
+            <div class="muted small">Pairing code</div>
+            <div class="big code-input" id="pair-code" style="font-size:2.2rem">${pairCode.code}</div>
+            <div class="muted small">Valid for ${mins} more minutes · single use</div>
+            <a class="btn sm ghost" style="margin-top:8px" target="_blank" href="${esc(IK.link('child.html'))}">Open IndiKids Child</a>
+          </div>`;
+      }
+      return `<button class="btn block" id="pair-btn">➕ Get pairing code</button>`;
+    }
+
+    function bindPairButton() {
+      const b = $('#pair-btn');
+      if (!b) return;
+      b.onclick = async () => {
+        try {
+          pairCode = await backend.pairCode(token);
+          render();
+        } catch (err) {
+          toast(err.message, 'bad');
+        }
+      };
+    }
+
+    function statusPill(c) {
+      if (c.rules.paused) return '<span class="pill bad">Paused</span>';
+      const dt = C.activeDowntime(c.rules, IK.now());
+      if (dt) return `<span class="pill warn">🌙 ${esc(dt.label)}</span>`;
+      if (c.rules.dailyLimitMin && C.remainingToday(c, IK.now()) <= 0) return '<span class="pill bad">Limit reached</span>';
+      return '<span class="pill good">Active</span>';
+    }
+
+    function ring(used, total) {
+      const pct = total ? Math.min(1, used / total) : 0;
+      const r = 46, len = 2 * Math.PI * r;
+      const color = pct >= 1 ? 'var(--bad)' : pct > 0.8 ? 'var(--accent)' : 'var(--primary)';
+      return `<svg class="ring" viewBox="0 0 110 110" role="img" aria-label="${Math.round(pct * 100)}% of daily limit used">
+        <circle cx="55" cy="55" r="${r}" fill="none" stroke="var(--line)" stroke-width="12"/>
+        <circle cx="55" cy="55" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"
+          stroke-dasharray="${len * pct} ${len}" transform="rotate(-90 55 55)"/>
+        <text x="55" y="61" text-anchor="middle" font-size="20" font-weight="800" fill="currentColor">${Math.round(pct * 100)}%</text>
+      </svg>`;
+    }
+
+    function renderHome() {
+      const c = child();
+      const now = IK.now();
+      const day = C.usageFor(c, now);
+      const used = C.countedMinutes(day);
+      const allowance = C.dailyAllowance(c.rules, now);
+      const pending = c.requests.filter((r) => r.status === 'pending');
+      const top = Object.entries(day).sort((a, b) => b[1] - a[1]).slice(0, 4);
+      const missing = Object.entries(c.permissions).filter(([, v]) => !v).map(([k]) => k);
+      const events = fam.events.filter((e) => !e.childId || e.childId === c.id).slice(0, 6);
+      const app = c.currentApp && isOnline(c) ? C.APP_BY_ID[c.currentApp] : null;
+
+      view.innerHTML = `
+        ${events.some((e) => e.type === 'sos' && Date.now() - e.ts < 30 * 60000) ? `<div class="alert bad" id="sos-alert">🚨 SOS from ${esc(c.name)} – check the <a href="#" data-go="location">location</a> now.</div>` : ''}
+        <section class="card">
+          <div class="row between">
+            <div>
+              <h2 style="margin:0">${esc(c.name)}</h2>
+              <div class="muted small">${esc(c.deviceName)} · ${isOnline(c) ? '🟢 Online' : 'Last seen ' + IK.ago(c.lastSeen)}${c.battery != null ? ` · 🔋 ${c.battery}%` : ''}</div>
+            </div>
+            <div id="status-pill">${statusPill(c)}</div>
+          </div>
+          ${app ? `<p class="small" style="margin:10px 0 0">Now using <strong>${app.icon} ${esc(app.name)}</strong></p>` : ''}
+        </section>
+
+        ${missing.length ? `<div class="alert warn small">⚠️ Permissions missing on ${esc(c.name)}'s phone: <strong>${missing.join(', ')}</strong>. Open IndiKids Child on that phone to finish setup.</div>` : ''}
+
+        ${pending.map((r) => `
+          <section class="card" style="border-color:var(--accent)">
+            <h3>⏰ ${esc(c.name)} asks for ${r.minutes} more minutes${r.appId ? ` on ${esc(C.APP_BY_ID[r.appId].name)}` : ''}</h3>
+            ${r.note ? `<p class="muted">“${esc(r.note)}”</p>` : ''}
+            <div class="row">
+              <button class="btn good sm" data-approve="${r.id}">Approve</button>
+              <button class="btn outline sm" data-decline="${r.id}">Decline</button>
+            </div>
+          </section>`).join('')}
+
+        <section class="card">
+          <h2>Screen time today</h2>
+          <div class="ring-wrap">
+            ${c.rules.dailyLimitMin ? ring(used, allowance) : ''}
+            <div>
+              <div class="big" id="used-today">${C.formatMin(used)}</div>
+              <div class="muted small">${c.rules.dailyLimitMin ? `of ${C.formatMin(allowance)} · <strong id="left-today">${C.formatMin(C.remainingToday(c, now))} left</strong>` : 'No daily limit set'}</div>
+              <div class="muted small">Essential &amp; study apps don't count.</div>
+            </div>
+          </div>
+          <div class="row wrap" style="margin-top:12px">
+            <button class="btn sm ${c.rules.paused ? 'good' : 'danger'}" id="pause-btn">${c.rules.paused ? '▶ Resume phone' : '⏸ Pause phone now'}</button>
+            <button class="btn sm ghost" data-bonus="15">+15 min</button>
+            <button class="btn sm ghost" data-bonus="30">+30 min</button>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>Most used today <a href="#" class="small" data-go="reports">See all</a></h2>
+          ${top.length ? `<ul class="list">${top.map(([id, m]) => `<li><div class="app-icon">${C.APP_BY_ID[id].icon}</div><div class="grow">${esc(C.APP_BY_ID[id].name)}</div><strong>${C.formatMin(m)}</strong></li>`).join('')}</ul>` : '<p class="muted">No app use yet today.</p>'}
+        </section>
+
+        <section class="card">
+          <h2>Alerts</h2>
+          ${events.length ? `<ul class="list">${events.map((e) => `<li><div class="app-icon">${{ sos: '🚨', request: '⏰', paired: '🔗', removed: '❌' }[e.type] || 'ℹ️'}</div><div class="grow small">${esc(e.text)}</div><span class="muted small">${IK.ago(e.ts)}</span></li>`).join('')}</ul>` : '<p class="muted">Nothing yet.</p>'}
+        </section>`;
+
+      $('#pause-btn').onclick = async () => {
+        if (!canEdit()) return;
+        await saveRules(Object.assign({}, c.rules, { paused: !c.rules.paused }), c.rules.paused ? 'Phone resumed' : 'Phone paused');
+      };
+      view.querySelectorAll('[data-bonus]').forEach((b) => (b.onclick = async () => {
+        if (!canEdit()) return;
+        try {
+          await backend.addBonus(token, c.id, Number(b.dataset.bonus), today());
+          toast(`Added ${b.dataset.bonus} minutes for today`, 'good');
+          refresh();
+        } catch (err) { toast(err.message, 'bad'); }
+      }));
+      view.querySelectorAll('[data-approve],[data-decline]').forEach((b) => (b.onclick = async () => {
+        try {
+          const approve = !!b.dataset.approve;
+          await backend.resolveRequest(token, c.id, b.dataset.approve || b.dataset.decline, approve);
+          toast(approve ? 'Extra time approved' : 'Request declined', approve ? 'good' : '');
+          refresh();
+        } catch (err) { toast(err.message, 'bad'); }
+      }));
+    }
+
+    async function saveRules(rules, msg) {
+      try {
+        await backend.updateRules(token, selectedId, rules);
+        if (msg) toast(msg, 'good');
+        await load();
+        render();
+      } catch (err) {
+        toast(err.message, 'bad');
+      }
+    }
+
+    const LIMIT_OPTIONS = [0, 15, 30, 45, 60, 90, 120, 180];
+
+    function renderLimits() {
+      const c = child();
+      const r = c.rules;
+      const apps = C.APPS.filter((a) => !a.essential);
+      view.innerHTML = `
+        <section class="card">
+          <h2>Daily screen time limit</h2>
+          <p class="muted small">When reached, all non-essential apps lock until midnight.</p>
+          <div class="row">
+            <input type="range" id="daily" min="0" max="360" step="15" value="${r.dailyLimitMin}" aria-label="Daily limit in minutes" style="flex:1">
+            <strong id="daily-val" style="min-width:70px;text-align:right">${r.dailyLimitMin ? C.formatMin(r.dailyLimitMin) : 'No limit'}</strong>
+          </div>
+          <button class="btn block" id="save-daily" style="margin-top:10px">Save daily limit</button>
+        </section>
+        <section class="card">
+          <h2>Apps</h2>
+          <p class="muted small">Switch off to block an app. Pick a limit to cap time per day.</p>
+          <ul class="list">
+            ${apps.map((a) => `
+              <li>
+                <div class="app-icon">${a.icon}</div>
+                <div class="grow"><div>${esc(a.name)}</div><div class="muted small">${a.category}</div></div>
+                <select data-applimit="${a.id}" aria-label="Daily limit for ${esc(a.name)}" style="width:auto;margin:0;padding:8px" ${r.blockedApps.includes(a.id) ? 'disabled' : ''}>
+                  ${LIMIT_OPTIONS.map((m) => `<option value="${m}" ${(r.appLimits[a.id] || 0) === m ? 'selected' : ''}>${m ? C.formatMin(m) : 'No limit'}</option>`).join('')}
+                </select>
+                <label class="switch" title="Allowed"><input type="checkbox" data-allow="${a.id}" aria-label="Allow ${esc(a.name)}" ${r.blockedApps.includes(a.id) ? '' : 'checked'}><span></span></label>
+              </li>`).join('')}
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Always allowed</h2>
+          <p class="muted small">${C.APPS.filter((a) => a.essential).map((a) => `${a.icon} ${esc(a.name)}`).join(' · ')}</p>
+          <p class="muted small">Calls, maps and study apps never lock, so your child can always reach you.</p>
+        </section>`;
+
+      $('#daily').oninput = (e) => ($('#daily-val').textContent = +e.target.value ? C.formatMin(+e.target.value) : 'No limit');
+      $('#save-daily').onclick = () => canEdit() && saveRules(Object.assign({}, r, { dailyLimitMin: +$('#daily').value }), 'Daily limit saved');
+      view.querySelectorAll('[data-applimit]').forEach((s) => (s.onchange = () => {
+        if (!canEdit()) return render();
+        const appLimits = Object.assign({}, r.appLimits, { [s.dataset.applimit]: +s.value });
+        saveRules(Object.assign({}, r, { appLimits }), 'App limit saved');
+      }));
+      view.querySelectorAll('[data-allow]').forEach((s) => (s.onchange = () => {
+        if (!canEdit()) return render();
+        const id = s.dataset.allow;
+        const blockedApps = s.checked ? r.blockedApps.filter((x) => x !== id) : r.blockedApps.concat(id);
+        saveRules(Object.assign({}, r, { blockedApps }), s.checked ? `${C.APP_BY_ID[id].name} allowed` : `${C.APP_BY_ID[id].name} blocked`);
+      }));
+    }
+
+    function renderSchedule() {
+      const c = child();
+      const r = c.rules;
+      const active = C.activeDowntime(r, IK.now());
+      view.innerHTML = `
+        <section class="card">
+          <h2>Scheduled downtime</h2>
+          <p class="muted small">During these times only always-allowed apps work.</p>
+          ${active ? `<div class="alert warn small">🌙 <strong>${esc(active.label)}</strong> is on right now.</div>` : ''}
+          <ul class="list">
+            ${r.downtime.map((w) => `
+              <li>
+                <div class="app-icon">${/bed|night|sleep/i.test(w.label) ? '🌙' : '📚'}</div>
+                <div class="grow">
+                  <div><strong>${esc(w.label)}</strong></div>
+                  <div class="muted small">${w.start} – ${w.end} · ${w.days.length === 7 ? 'Every day' : w.days.map((d) => C.DAYS[d]).join(', ')}</div>
+                  <div class="row" style="margin-top:4px">
+                    <button class="btn sm outline" data-edit="${esc(w.id)}">Edit</button>
+                    <button class="btn sm outline" data-del="${esc(w.id)}">Delete</button>
+                  </div>
+                </div>
+                <label class="switch"><input type="checkbox" data-toggle="${esc(w.id)}" aria-label="Turn ${esc(w.label)} on or off" ${w.enabled ? 'checked' : ''}><span></span></label>
+              </li>`).join('') || '<li class="muted">No downtime yet.</li>'}
+          </ul>
+          <button class="btn block ghost" id="add-dt" style="margin-top:10px">➕ Add downtime</button>
+        </section>`;
+
+      const withDowntime = (downtime) => Object.assign({}, r, { downtime });
+      view.querySelectorAll('[data-toggle]').forEach((s) => (s.onchange = () => {
+        if (!canEdit()) return render();
+        saveRules(withDowntime(r.downtime.map((w) => (w.id === s.dataset.toggle ? Object.assign({}, w, { enabled: s.checked }) : w))), 'Downtime updated');
+      }));
+      view.querySelectorAll('[data-del]').forEach((b) => (b.onclick = async () => {
+        if (!canEdit()) return;
+        if (await confirmBox('Delete downtime?', 'This schedule will be removed.', 'Delete')) {
+          saveRules(withDowntime(r.downtime.filter((w) => w.id !== b.dataset.del)), 'Downtime deleted');
+        }
+      }));
+      view.querySelectorAll('[data-edit]').forEach((b) => (b.onclick = () => canEdit() && editDowntime(r.downtime.find((w) => w.id === b.dataset.edit))));
+      $('#add-dt').onclick = () => canEdit() && editDowntime(null);
+    }
+
+    function editDowntime(w) {
+      const d = $('#dt-dialog');
+      const r = child().rules;
+      const cur = w || { label: 'Homework time', start: '16:00', end: '18:00', days: [1, 2, 3, 4, 5], enabled: true };
+      $('#dt-title').textContent = w ? 'Edit downtime' : 'Add downtime';
+      $('#dt-label').value = cur.label;
+      $('#dt-start').value = cur.start;
+      $('#dt-end').value = cur.end;
+      $('#dt-days').innerHTML = C.DAYS.map((n, i) => `<label><input type="checkbox" value="${i}" ${cur.days.includes(i) ? 'checked' : ''}><span>${n}</span></label>`).join('');
+      d.returnValue = '';
+      d.onclose = () => {
+        if (d.returnValue !== 'save') return;
+        const days = [...$('#dt-days').querySelectorAll('input:checked')].map((i) => +i.value);
+        if (!days.length) return toast('Pick at least one day', 'bad');
+        if ($('#dt-start').value === $('#dt-end').value) return toast('Start and end must differ', 'bad');
+        const next = { id: w ? w.id : Math.random().toString(36).slice(2, 8), label: $('#dt-label').value, start: $('#dt-start').value, end: $('#dt-end').value, days, enabled: w ? w.enabled : true };
+        const downtime = w ? r.downtime.map((x) => (x.id === w.id ? next : x)) : r.downtime.concat(next);
+        saveRules(Object.assign({}, r, { downtime }), 'Downtime saved');
+      };
+      d.showModal();
+    }
+
+    // Map built from OpenStreetMap tiles; a plain grid shows if tiles can't load.
+    function mapHtml(loc, width) {
+      const z = 16, n = 2 ** z, H = 260;
+      const xt = ((loc.lng + 180) / 360) * n;
+      const lat = (loc.lat * Math.PI) / 180;
+      const yt = ((1 - Math.log(Math.tan(lat) + 1 / Math.cos(lat)) / Math.PI) / 2) * n;
+      const tiles = [];
+      for (let dx = -2; dx <= 2; dx++) for (let dy = -1; dy <= 1; dy++) {
+        const tx = Math.floor(xt) + dx, ty = Math.floor(yt) + dy;
+        const left = Math.round(width / 2 + (tx - xt) * 256), top = Math.round(H / 2 + (ty - yt) * 256);
+        tiles.push(`<img alt="" src="https://tile.openstreetmap.org/${z}/${tx}/${ty}.png" style="position:absolute;left:${left}px;top:${top}px;width:256px;height:256px" onerror="this.remove()">`);
+      }
+      const mpp = (156543.03 * Math.cos(lat)) / n * 256 / 256; // metres per pixel at this zoom
+      const accPx = Math.max(10, Math.min(120, (loc.accuracy || 20) / mpp));
+      return `<div class="map" id="map">
+          <svg aria-hidden="true"><defs><pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="var(--line)" stroke-width="2"/></pattern></defs><rect width="100%" height="100%" fill="url(#g)"/></svg>
+          ${tiles.join('')}
+          <div style="position:absolute;left:50%;top:50%;width:${accPx * 2}px;height:${accPx * 2}px;margin:-${accPx}px 0 0 -${accPx}px;border-radius:50%;background:rgba(59,76,202,.18);border:2px solid rgba(59,76,202,.5)"></div>
+          <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-100%);font-size:34px" aria-hidden="true">📍</div>
+          <div class="small" style="position:absolute;right:4px;bottom:2px;background:rgba(255,255,255,.8);color:#333;padding:0 4px;border-radius:4px">© OpenStreetMap</div>
+        </div>`;
+    }
+
+    function renderLocation() {
+      const c = child();
+      const loc = c.location;
+      view.innerHTML = `
+        <section class="card">
+          <h2>${esc(c.name)}'s location</h2>
+          ${loc ? `
+            <div id="map-slot"></div>
+            <p class="small" style="margin-top:10px">Updated <strong>${IK.ago(loc.ts)}</strong> · accuracy about ${loc.accuracy || '?'} m${c.battery != null ? ` · 🔋 ${c.battery}%` : ''}</p>
+            <p class="muted small">${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}</p>
+            <div class="row wrap">
+              <a class="btn sm" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}">Open in Google Maps</a>
+              <a class="btn sm ghost" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${loc.lat}&mlon=${loc.lng}#map=17/${loc.lat}/${loc.lng}">OpenStreetMap</a>
+            </div>` : `<p class="muted">No location yet. Make sure location access is allowed in IndiKids Child on ${esc(c.name)}'s phone.</p>`}
+          <p class="muted small" style="margin-top:10px">Location needs GPS and mobile data on the child's phone. It updates while IndiKids Child is running.</p>
+        </section>`;
+      if (loc) $('#map-slot').innerHTML = mapHtml(loc, $('#map-slot').clientWidth || 340);
+    }
+
+    function barChart(days) {
+      const max = Math.max(60, ...days.map((d) => d.total));
+      const W = 320, H = 150, bw = 30, gap = (W - bw * days.length) / (days.length + 1);
+      return `<svg class="chart" viewBox="0 0 ${W} ${H + 34}" role="img" aria-label="Screen time over the last 7 days">
+        ${days.map((d, i) => {
+          const h = Math.round((d.total / max) * H);
+          const x = gap + i * (bw + gap);
+          return `<g><title>${d.label}: ${C.formatMin(d.total)}</title>
+            <rect x="${x}" y="${H - h + 4}" width="${bw}" height="${Math.max(h, 1)}" rx="6" fill="${d.isToday ? 'var(--accent)' : 'var(--primary)'}"/>
+            <text x="${x + bw / 2}" y="${H + 20}" text-anchor="middle">${d.label}</text>
+            <text x="${x + bw / 2}" y="${H + 32}" text-anchor="middle">${C.formatMin(d.total)}</text></g>`;
+        }).join('')}
+      </svg>`;
+    }
+
+    function renderReports() {
+      const c = child();
+      const now = IK.now();
+      const days = [];
+      const week = {};
+      for (let i = 6; i >= 0; i--) {
+        const t = now - i * 864e5;
+        const u = C.usageFor(c, t);
+        days.push({ label: C.DAYS[new Date(t).getDay()], total: C.totalMinutes(u), isToday: i === 0 });
+        for (const [k, v] of Object.entries(u)) week[k] = (week[k] || 0) + v;
+      }
+      const data = reportRange === 'today' ? C.usageFor(c, now) : week;
+      const rows = Object.entries(data).sort((a, b) => b[1] - a[1]);
+      const max = rows.length ? rows[0][1] : 1;
+      const total = C.totalMinutes(data);
+      const avg = days.reduce((a, d) => a + d.total, 0) / 7;
+      view.innerHTML = `
+        <section class="card">
+          <h2>Last 7 days</h2>
+          <p class="muted small">Daily average <strong>${C.formatMin(avg)}</strong></p>
+          ${barChart(days)}
+        </section>
+        <section class="card">
+          <h2>App usage
+            <span class="row" role="group" aria-label="Range">
+              <button class="btn sm ${reportRange === 'today' ? '' : 'outline'}" data-range="today">Today</button>
+              <button class="btn sm ${reportRange === 'week' ? '' : 'outline'}" data-range="week">7 days</button>
+            </span>
+          </h2>
+          <p class="muted small">Total ${C.formatMin(total)}</p>
+          ${rows.length ? `<ul class="list" id="usage-list">${rows.map(([id, m]) => {
+            const a = C.APP_BY_ID[id];
+            const lim = c.rules.appLimits[id];
+            const over = reportRange === 'today' && lim && m >= lim;
+            return `<li><div class="app-icon">${a.icon}</div><div class="grow">
+                <div class="row between"><span>${esc(a.name)}</span><strong>${C.formatMin(m)}</strong></div>
+                <div class="bar"><i class="${over ? 'over' : ''}" style="width:${Math.round((m / max) * 100)}%"></i></div>
+                ${reportRange === 'today' && lim ? `<div class="muted small">Limit ${C.formatMin(lim)}</div>` : ''}
+              </div></li>`;
+          }).join('')}</ul>` : '<p class="muted">No usage recorded.</p>'}
+        </section>`;
+      view.querySelectorAll('[data-range]').forEach((b) => (b.onclick = () => { reportRange = b.dataset.range; render(); }));
+    }
+
+    function renderSettings() {
+      const list = children();
+      const daysLeft = Math.max(0, Math.ceil((fam.trialEndsAt - Date.now()) / 864e5));
+      const planText = fam.plan === 'premium' ? '<span class="pill good">Premium</span>'
+        : fam.plan === 'trial' ? (fam.trialActive ? `<span class="pill warn">Free trial · ${daysLeft} days left</span>` : '<span class="pill bad">Trial ended</span>')
+        : '<span class="pill bad">Cancelled</span>';
+      view.innerHTML = `
+        <section class="card">
+          <h2>Children</h2>
+          <ul class="list">
+            ${list.map((c) => `<li><div class="app-icon">🧒</div><div class="grow"><div><strong>${esc(c.name)}</strong></div><div class="muted small">${esc(c.deviceName)} · connected ${new Date(c.pairedAt).toLocaleDateString()}</div></div>
+              <button class="btn sm outline" data-remove="${c.id}">Remove</button></li>`).join('') || '<li class="muted">No devices connected.</li>'}
+          </ul>
+          <div style="margin-top:10px">${pairCodeHtml()}</div>
+        </section>
+        <section class="card">
+          <h2>Subscription ${planText}</h2>
+          <p class="muted small">Premium features need an active subscription. Plans are sold through Google Play / App Store and renew automatically unless cancelled at least 24 hours before the period ends.</p>
+          <div class="row wrap">
+            ${fam.plan !== 'premium' ? '<button class="btn sm" id="subscribe">Activate Premium</button>' : ''}
+            ${fam.plan !== 'cancelled' ? '<button class="btn sm outline" id="cancel-plan">Cancel subscription</button>' : ''}
+          </div>
+          <p class="muted small" style="margin-top:8px">Store billing is not connected in this version, so Premium activates free. You can also cancel by emailing <a href="mailto:support@indikids.com">support@indikids.com</a> (processed within 5 business days).</p>
+        </section>
+        <section class="card">
+          <h2>Help &amp; legal</h2>
+          <ul class="list">
+            <li><div class="app-icon">📄</div><a class="grow" href="${IK.link('terms.html')}">Terms of Use</a></li>
+            <li><div class="app-icon">✉️</div><a class="grow" href="mailto:support@indikids.com">Contact support</a></li>
+            <li><div class="app-icon">🚩</div><a class="grow" href="mailto:safety@indikids.com">Report child-safety misuse</a></li>
+          </ul>
+        </section>
+        <section class="card">
+          <h2>Account</h2>
+          <p class="muted small">Signed in as ${esc(fam.parentName)}${IK.isDemo ? ' (demo)' : ''}.</p>
+          <div class="row wrap">
+            <button class="btn sm outline" id="sign-out">Sign out</button>
+            <button class="btn sm danger" id="close-account">Close account</button>
+          </div>
+        </section>`;
+
+      bindPairButton();
+      view.querySelectorAll('[data-remove]').forEach((b) => (b.onclick = async () => {
+        const c = fam.children[b.dataset.remove];
+        if (!(await confirmBox(`Remove ${c.name}'s device?`, 'Rules stop applying and usage history for this child is deleted.', 'Remove'))) return;
+        try {
+          await backend.removeChild(token, c.id);
+          toast('Device removed');
+          refresh();
+        } catch (err) { toast(err.message, 'bad'); }
+      }));
+      const plan = async (action, msg) => {
+        try {
+          fam = await backend.setPlan(token, action);
+          toast(msg, 'good');
+          refresh();
+        } catch (err) { toast(err.message, 'bad'); }
+      };
+      if ($('#subscribe')) $('#subscribe').onclick = () => plan('subscribe', 'Premium is active');
+      if ($('#cancel-plan')) $('#cancel-plan').onclick = async () => {
+        if (await confirmBox('Cancel subscription?', 'Rules you set keep working, but you will not be able to change them until you re-activate.', 'Cancel subscription')) plan('cancel', 'Subscription cancelled');
+      };
+      $('#sign-out').onclick = () => { IK.token.set('parent', null); location.href = IK.link('index.html'); };
+      $('#close-account').onclick = async () => {
+        if (!(await confirmBox('Close your account?', 'All children, rules, locations and usage history are permanently deleted. Child phones are disconnected.', 'Close account'))) return;
+        try {
+          await backend.closeAccount(token);
+          IK.token.set('parent', null);
+          location.href = IK.link('index.html');
+        } catch (err) { toast(err.message, 'bad'); }
+      };
+    }
+
+    // Re-render live tabs on new data; tabs with forms re-render only on user action.
+    async function refresh() {
+      if (!(await load())) return;
+      const editing = $('dialog[open]') || (['limits', 'schedule'].includes(tab) && view.contains(document.activeElement));
+      if (!editing) render();
+    }
+
+    document.querySelectorAll('.tabs button').forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+    document.addEventListener('click', (e) => {
+      const go = e.target.closest('[data-go]');
+      if (go) { e.preventDefault(); setTab(go.dataset.go); }
+    });
+    $('#child-select').onchange = (e) => { selectedId = e.target.value; render(); };
+
+    load().then((ok) => ok && setTab('home'));
+    IK.onChange(refresh);
+  })();
+  </script>
+</body>
+</html>

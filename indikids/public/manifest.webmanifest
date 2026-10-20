@@ -1,0 +1,11 @@
+{
+  "name": "IndiKids",
+  "short_name": "IndiKids",
+  "description": "Parental control: screen time limits, downtime, location and app usage.",
+  "start_url": "parent.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f5fb",
+  "theme_color": "#3b4cca",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

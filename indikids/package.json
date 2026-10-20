@@ -1,0 +1,13 @@
+{
+  "name": "indikids",
+  "version": "1.0.0",
+  "description": "IndiKids parental control: parent app, IndiKids Child companion app and server",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/e2e.js"
+  },
+  "engines": { "node": ">=18" }
+}

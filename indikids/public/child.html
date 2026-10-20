@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ff8a00">
+  <title>IndiKids Child</title>
+  <link rel="manifest" href="manifest-child.webmanifest">
+  <link rel="stylesheet" href="app.css">
+  <link rel="icon" href="icon.svg">
+</head>
+<body>
+  <main class="app" style="padding-bottom:24px">
+    <header class="topbar">
+      <div class="brand"><span class="logo" aria-hidden="true">🧒</span>IndiKids Child</div>
+      <span id="battery" class="muted small"></span>
+    </header>
+    <div id="view" aria-live="polite"></div>
+  </main>
+
+  <dialog id="ask-dialog">
+    <form id="ask-form" method="dialog">
+      <h2>Ask for more time</h2>
+      <label class="field">How much?
+        <select id="ask-min">
+          <option value="15">15 minutes</option>
+          <option value="30" selected>30 minutes</option>
+          <option value="60">1 hour</option>
+        </select>
+      </label>
+      <label class="field">For which app? <select id="ask-app"></select></label>
+      <label class="field">Message (optional) <input type="text" id="ask-note" maxlength="140" placeholder="I need it to finish my project"></label>
+      <div class="row between">
+        <button class="btn outline" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn" value="send">Send to parent</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="core.js"></script>
+  <script src="store.js"></script>
+  <script src="api.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = IKCore;
+    const { esc, toast, backend } = IK;
+    const $ = (s, el) => (el || document).querySelector(s);
+    const view = $('#view');
+
+    let token = IK.token.get('child');
+    let me = null;           // { parentName, child }
+    let openApp = null;      // app id currently "in use"
+    let pending = {};        // usage not yet sent: { day: { app: minutes } }
+    let lastLocation = null;
+    let battery = null;
+    let screen = 'home';
+    let geoWatch = null;
+    let reportBusy = false;
+    const granted = {};      // permissions granted on this device; survive server refreshes
+
+    IK.demoBadge();
+
+    // ---- Onboarding (Terms 3.3 – 3.5) -----------------------------------------
+    function renderPairing(err) {
+      view.innerHTML = `
+        <section class="card">
+          <h2>Connect to your parent</h2>
+          <p class="muted small">Ask your parent to open <strong>IndiKids</strong> and tap <em>Get pairing code</em>.</p>
+          ${err ? `<div class="alert bad">${esc(err)}</div>` : ''}
+          <form id="pair-form">
+            <label class="field">Pairing code
+              <input type="text" id="code" class="code-input" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required>
+            </label>
+            <label class="field">Your first name <input type="text" id="kid-name" maxlength="30" required></label>
+            <label class="field">Phone name <input type="text" id="device-name" maxlength="40" placeholder="e.g. Redmi Note 13"></label>
+            <div class="alert warn small">
+              <strong>What your parent will see:</strong> how long you use each app, your phone's location and battery.
+              Your parent can set screen-time limits and downtime. Messages, photos and passwords are <strong>not</strong> shared.
+            </div>
+            <label class="check"><input type="checkbox" id="terms" required>
+              <span>My parent installed this app and we agree to the <a href="${esc(IK.link('terms.html'))}" target="_blank">Terms of Use</a>.</span>
+            </label>
+            <button class="btn block" id="continue">Continue</button>
+          </form>
+        </section>`;
+      $('#pair-form').onsubmit = async (e) => {
+        e.preventDefault();
+        $('#continue').disabled = true;
+        try {
+          const res = await backend.pair({
+            code: $('#code').value,
+            childName: $('#kid-name').value,
+            deviceName: $('#device-name').value || guessDevice(),
+            acceptedTerms: $('#terms').checked,
+          });
+          token = res.token;
+          IK.token.set('child', token);
+          await refresh();
+          screen = 'permissions';
+          render();
+        } catch (err2) {
+          renderPairing(err2.message);
+        }
+      };
+    }
+
+    function guessDevice() {
+      const m = navigator.userAgent.match(/Android [\d.]+; ([^;)]+)/);
+      return m ? m[1].trim() : /iPhone|iPad/.test(navigator.userAgent) ? 'iPhone' : 'Child phone';
+    }
+
+    function renderPermissions() {
+      const p = me.child.permissions;
+      const item = (key, icon, title, text, btn) => `
+        <li><div class="app-icon">${icon}</div><div class="grow"><div><strong>${title}</strong></div><div class="muted small">${text}</div></div>
+        ${p[key] ? '<span class="pill good">Allowed</span>' : `<button class="btn sm" data-perm="${key}">${btn}</button>`}</li>`;
+      view.innerHTML = `
+        <section class="card">
+          <h2>Finish setup</h2>
+          <p class="muted small">IndiKids needs these permissions to keep you safe.</p>
+          <ul class="list">
+            ${item('location', '📍', 'Location', 'So your parent can find you if needed.', 'Allow')}
+            ${item('usage', '📊', 'Usage access', 'Counts screen time for each app.', 'Allow')}
+            ${item('accessibility', '♿', 'Accessibility', 'Lets IndiKids lock apps when time is up.', 'Allow')}
+          </ul>
+          <button class="btn block" id="done" style="margin-top:12px">Done</button>
+          <p class="muted small" style="margin-top:8px">Usage access and Accessibility are Android settings; in this web version they are simulated and apps are opened from the IndiKids launcher.</p>
+        </section>`;
+      view.querySelectorAll('[data-perm]').forEach((b) => (b.onclick = () => grant(b.dataset.perm)));
+      $('#done').onclick = () => { screen = 'home'; render(); };
+    }
+
+    function grant(key) {
+      if (key === 'location') {
+        if (IK.isDemo) { granted.location = true; startLocation(); return sendPerms(); }
+        if (!navigator.geolocation) return toast('Location is not available on this phone', 'bad');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => { setLocation(pos); granted.location = true; startLocation(); sendPerms(); },
+          () => toast('Location was not allowed. Turn it on in phone settings.', 'bad'),
+          { enableHighAccuracy: true, timeout: 15000 }
+        );
+        return;
+      }
+      granted[key] = true;
+      sendPerms();
+    }
+
+    async function sendPerms() {
+      Object.assign(me.child.permissions, granted);
+      while (reportBusy) await new Promise((r) => setTimeout(r, 50));
+      await report(true);
+      render();
+    }
+
+    // ---- Location & battery -----------------------------------------------------
+    function setLocation(pos) {
+      lastLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy };
+    }
+
+    let demoStep = 0;
+    function startLocation() {
+      if (!me || !me.child.permissions.location || geoWatch !== null) return;
+      if (IK.isDemo) {
+        // Walk a loop around MG Road, Bengaluru.
+        geoWatch = setInterval(() => {
+          demoStep++;
+          const a = demoStep / 40;
+          lastLocation = { lat: 12.9716 + 0.004 * Math.sin(a), lng: 77.5946 + 0.006 * Math.cos(a), accuracy: 12 };
+        }, 1000);
+        return;
+      }
+      if (navigator.geolocation) {
+        geoWatch = navigator.geolocation.watchPosition(setLocation, () => {}, { enableHighAccuracy: true, maximumAge: 30000 });
+      }
+    }
+
+    function startBattery() {
+      if (IK.isDemo) { battery = 76; return; }
+      if (navigator.getBattery) {
+        navigator.getBattery().then((b) => {
+          const upd = () => { battery = Math.round(b.level * 100); };
+          upd();
+          b.addEventListener('levelchange', upd);
+        });
+      }
+    }
+
+    // ---- Usage tracking ---------------------------------------------------------
+    // Server copy plus usage not reported yet.
+    function liveChild() {
+      const c = JSON.parse(JSON.stringify(me.child));
+      for (const [day, apps] of Object.entries(pending)) {
+        c.usage[day] = c.usage[day] || {};
+        for (const [id, m] of Object.entries(apps)) c.usage[day][id] = (c.usage[day][id] || 0) + m;
+      }
+      return c;
+    }
+
+    let lastTick = Date.now();
+    function tick() {
+      const t = Date.now();
+      const elapsedMin = Math.min(5, (t - lastTick) / 60000) * IK.speed;
+      lastTick = t;
+      if (!me) return;
+      if (openApp && document.visibilityState === 'visible') {
+        const day = C.dayKey(IK.now());
+        pending[day] = pending[day] || {};
+        pending[day][openApp] = (pending[day][openApp] || 0) + elapsedMin;
+        const st = C.appStatus(liveChild(), openApp, IK.now());
+        if (!st.allowed) {
+          const app = C.APP_BY_ID[openApp];
+          openApp = null;
+          screen = 'home';
+          showLock(app, st);
+          report();
+          return;
+        }
+      }
+      if (screen === 'home' || screen === 'using') render();
+    }
+
+    async function report(force) {
+      if (!token || !me || reportBusy) return;
+      reportBusy = true;
+      const sending = pending;
+      pending = {};
+      if (IK.isDemo && battery != null && Math.random() < 0.02) battery = Math.max(5, battery - 1);
+      try {
+        me.child = await backend.report(token, {
+          usage: sending,
+          location: lastLocation,
+          battery,
+          permissions: Object.assign({}, me.child.permissions, granted),
+          currentApp: openApp,
+        });
+        Object.assign(me.child.permissions, granted);
+      } catch (err) {
+        // Keep the minutes and send them next time.
+        for (const [day, apps] of Object.entries(sending)) {
+          pending[day] = pending[day] || {};
+          for (const [id, m] of Object.entries(apps)) pending[day][id] = (pending[day][id] || 0) + m;
+        }
+        if (err.status === 401) return signedOut();
+      } finally {
+        reportBusy = false;
+      }
+      if (force) render();
+    }
+
+    async function refresh() {
+      if (!token) return;
+      try {
+        me = await backend.me(token);
+        Object.assign(me.child.permissions, granted);
+        startLocation();
+      } catch (err) {
+        if (err.status === 401) signedOut();
+      }
+    }
+
+    function signedOut() {
+      token = null;
+      me = null;
+      openApp = null;
+      IK.token.set('child', null);
+      screen = 'home';
+      render();
+    }
+
+    // ---- Screens ----------------------------------------------------------------
+    function statusBanner(c, now) {
+      if (c.rules.paused) return '<div class="alert bad">⏸ Your parent paused this phone.</div>';
+      const dt = C.activeDowntime(c.rules, now);
+      if (dt) return `<div class="alert warn">🌙 <strong>${esc(dt.label)}</strong> until ${dt.end}. Only always-allowed apps work.</div>`;
+      if (c.rules.dailyLimitMin && C.remainingToday(c, now) <= 0) return '<div class="alert bad">⏰ Screen time for today is used up.</div>';
+      return '';
+    }
+
+    function renderHome() {
+      const c = liveChild();
+      const now = IK.now();
+      const left = C.remainingToday(c, now);
+      const req = c.requests[0];
+      $('#battery').textContent = battery != null ? `🔋 ${battery}%` : '';
+      view.innerHTML = `
+        <section class="card" style="text-align:center">
+          <div class="muted small">Hi ${esc(c.name)}! Screen time left today</div>
+          <div class="big" id="time-left" style="font-size:2.4rem">${c.rules.dailyLimitMin ? C.formatMin(left) : 'No limit'}</div>
+          ${req && req.status === 'pending' ? '<span class="pill warn">Waiting for parent…</span>' : ''}
+          ${req && req.status === 'approved' && Date.now() - req.answeredAt < 10 * 60000 ? `<span class="pill good">Parent gave you ${req.granted} more minutes 🎉</span>` : ''}
+          ${req && req.status === 'declined' && Date.now() - req.answeredAt < 10 * 60000 ? '<span class="pill bad">Parent said no this time</span>' : ''}
+        </section>
+        ${statusBanner(c, now)}
+        <section class="card">
+          <div class="launcher" id="launcher">
+            ${C.APPS.map((a) => {
+              const st = C.appStatus(c, a.id, now);
+              return `<button class="tile ${st.allowed ? '' : 'locked'}" data-app="${a.id}" aria-label="${esc(a.name)}${st.allowed ? '' : ' (locked)'}">
+                <div class="app-icon">${a.icon}</div>${st.allowed ? '' : '<span class="lock" aria-hidden="true">🔒</span>'}
+                <span>${esc(a.name)}</span>
+                <span class="left">${st.allowed ? (st.remaining === Infinity ? 'Always' : C.formatMin(st.remaining)) : 'Locked'}</span>
+              </button>`;
+            }).join('')}
+          </div>
+        </section>
+        <div class="grid2">
+          <button class="btn ghost" id="ask" ${req && req.status === 'pending' ? 'disabled' : ''}>⏰ Ask for time</button>
+          <button class="btn sos" id="sos">🚨 SOS</button>
+        </div>
+        <p class="muted small" style="text-align:center;margin-top:14px">This phone is supervised by IndiKids · Parent: ${esc(me.parentName)}<br>
+          <a href="#" id="perm-link">Permissions</a> · <a href="${esc(IK.link('terms.html'))}">Terms</a></p>`;
+
+      view.querySelectorAll('[data-app]').forEach((b) => (b.onclick = () => launch(b.dataset.app)));
+      $('#ask').onclick = () => askTime(null);
+      $('#sos').onclick = sos;
+      $('#perm-link').onclick = (e) => { e.preventDefault(); screen = 'permissions'; render(); };
+    }
+
+    function launch(appId) {
+      const st = C.appStatus(liveChild(), appId, IK.now());
+      const app = C.APP_BY_ID[appId];
+      if (!st.allowed) return showLock(app, st);
+      openApp = appId;
+      lastTick = Date.now();
+      screen = 'using';
+      render();
+      report();
+    }
+
+    function renderUsing() {
+      const app = C.APP_BY_ID[openApp];
+      const st = C.appStatus(liveChild(), openApp, IK.now());
+      view.innerHTML = `
+        <section class="card using">
+          <div class="app-icon">${app.icon}</div>
+          <h2>Using ${esc(app.name)}</h2>
+          <p class="muted" id="app-left">${st.remaining === Infinity ? 'No time limit for this app' : `${C.formatMin(st.remaining)} left`}</p>
+          <p class="muted small">In the Android app, ${esc(app.name)} opens here and IndiKids counts the time in the background.</p>
+          <button class="btn block outline" id="close-app">Close ${esc(app.name)}</button>
+        </section>`;
+      $('#close-app').onclick = () => { openApp = null; screen = 'home'; report(); render(); };
+    }
+
+    function showLock(app, st) {
+      screen = 'lock';
+      view.innerHTML = `
+        <section class="card lockscreen" id="lockscreen">
+          <div class="emoji">🔒</div>
+          <h2>${esc(app.name)} is locked</h2>
+          <p class="muted">${esc(C.REASON_TEXT[st.reason] || 'Locked')}${st.window ? ` (${esc(st.window.label)} until ${st.window.end})` : ''}.</p>
+          <div class="stack">
+            ${st.reason !== 'blocked' ? `<button class="btn block" id="lock-ask">⏰ Ask for more time</button>` : ''}
+            <button class="btn block outline" id="lock-home">Back to home</button>
+          </div>
+        </section>`;
+      if ($('#lock-ask')) $('#lock-ask').onclick = () => askTime(app.id);
+      $('#lock-home').onclick = () => { screen = 'home'; render(); };
+    }
+
+    function askTime(appId) {
+      const d = $('#ask-dialog');
+      $('#ask-app').innerHTML = '<option value="">Any app</option>' + C.APPS.filter((a) => !a.essential)
+        .map((a) => `<option value="${a.id}" ${a.id === appId ? 'selected' : ''}>${esc(a.name)}</option>`).join('');
+      $('#ask-note').value = '';
+      d.returnValue = '';
+      d.onclose = async () => {
+        if (d.returnValue !== 'send') return;
+        try {
+          await backend.request(token, { appId: $('#ask-app').value || null, minutes: +$('#ask-min').value, note: $('#ask-note').value, day: C.dayKey(IK.now()) });
+          toast('Request sent to your parent', 'good');
+          await refresh();
+          screen = 'home';
+          render();
+        } catch (err) { toast(err.message, 'bad'); }
+      };
+      d.showModal();
+    }
+
+    async function sos() {
+      try {
+        await backend.sos(token, { location: lastLocation });
+        toast('SOS sent to your parent with your location', 'good');
+      } catch (err) { toast(err.message, 'bad'); }
+    }
+
+    function render() {
+      if (!token || !me) return renderPairing();
+      if ($('dialog[open]')) return;
+      if (screen === 'permissions') return renderPermissions();
+      if (screen === 'using' && openApp) return renderUsing();
+      if (screen === 'lock') return;
+      renderHome();
+    }
+
+    // ---- Start ------------------------------------------------------------------
+    startBattery();
+    refresh().then(() => {
+      if (me && Object.values(me.child.permissions).some((v) => !v)) screen = 'permissions';
+      render();
+    });
+    setInterval(tick, 1000);
+    setInterval(report, IK.isDemo ? 1500 : 10000);
+    IK.onChange(async () => {
+      const before = me && JSON.stringify([me.child.rules, me.child.requests]);
+      await refresh();
+      if (me && before !== JSON.stringify([me.child.rules, me.child.requests]) && screen !== 'lock') render();
+    }, IK.isDemo ? 2000 : 8000);
+    document.addEventListener('visibilitychange', () => { lastTick = Date.now(); if (document.visibilityState === 'hidden') report(); });
+  })();
+  </script>
+</body>
+</html>
